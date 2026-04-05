@@ -10,6 +10,8 @@ export interface RouletteStateDoc {
   resultShownUntil: admin.firestore.Timestamp | null;
   spinDurationSec: number;
   rtpMode: RtpMode;
+  /** 0–100; used when `rtpMode === "mixed"` (default 50 if missing in older docs). */
+  playerFavorPercent?: number;
   manualNextNumber: number | null;
   recentResults: number[];
   totalHouseProfit?: number;
@@ -29,7 +31,8 @@ export function defaultRouletteState(spinDurationSec = 30): RouletteStateDoc {
     winningNumber: null,
     resultShownUntil: null,
     spinDurationSec,
-    rtpMode: "auto",
+    rtpMode: "house",
+    playerFavorPercent: 50,
     manualNextNumber: null,
     recentResults: [],
     totalHouseProfit: 0,

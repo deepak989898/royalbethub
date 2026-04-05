@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import { getAdminDb, getFirebaseAdminApp, isFirebaseAdminConfigured } from "@/lib/firebase-admin";
 import { ApiError, handleRouteError, jsonError, jsonOk } from "@/lib/roulette/api-auth";
-import { payoutForBet, pickMinPayoutNumber } from "@/lib/roulette/engine";
+import { payoutForBet, pickWinningNumber } from "@/lib/roulette/engine";
 import type { BetForEngine } from "@/lib/roulette/engine";
 import type { BetType } from "@/lib/roulette/types";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
@@ -66,17 +66,12 @@ export async function POST() {
       amount: b.amount,
     }));
 
-    let winning: number;
-    if (
-      st0.rtpMode === "manual" &&
-      st0.manualNextNumber != null &&
-      st0.manualNextNumber >= 0 &&
-      st0.manualNextNumber <= 36
-    ) {
-      winning = st0.manualNextNumber;
-    } else {
-      winning = pickMinPayoutNumber(engineBets);
-    }
+    const winning = pickWinningNumber(
+      engineBets,
+      String(st0.rtpMode),
+      st0.manualNextNumber,
+      st0.playerFavorPercent
+    );
 
     const payoutsByUser = new Map<string, number>();
     let totalStakes = 0;

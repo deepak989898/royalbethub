@@ -14,7 +14,15 @@ export type BetType =
   | "low"
   | "high";
 
-export type RtpMode = "auto" | "manual";
+/**
+ * - `auto` — legacy alias for `house` (kept for existing Firestore docs).
+ * - `house` — minimize total payout when anyone bet (house edge).
+ * - `fair` — uniform random 0–36; ignores bet layout.
+ * - `player` — maximize total payout when anyone bet.
+ * - `mixed` — each round with bets: `playerFavorPercent`% chance use `player`, else `house`.
+ * - `manual` — use `manualNextNumber` for the next resolve only.
+ */
+export type RtpMode = "auto" | "house" | "fair" | "player" | "mixed" | "manual";
 
 export interface RouletteGlobalState {
   phase: RoulettePhase;
@@ -25,6 +33,8 @@ export interface RouletteGlobalState {
   resultShownUntil: { seconds: number; nanoseconds: number } | null;
   spinDurationSec: number;
   rtpMode: RtpMode;
+  /** 0–100; used when `rtpMode === "mixed"` (default 50 if omitted). */
+  playerFavorPercent?: number;
   manualNextNumber: number | null;
   recentResults: number[];
 }

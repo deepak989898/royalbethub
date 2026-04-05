@@ -17,9 +17,18 @@ export async function POST() {
         tx.set(ref, defaultRouletteState(30));
         return;
       }
-      const dur = Number(snap.data()?.spinDurationSec);
+      const d = snap.data() ?? {};
+      const patch: Record<string, unknown> = {};
+      const dur = Number(d.spinDurationSec);
       if (dur === 15) {
-        tx.update(ref, { spinDurationSec: 30 });
+        patch.spinDurationSec = 30;
+      }
+      const pfp = d.playerFavorPercent;
+      if (pfp == null || !Number.isFinite(Number(pfp))) {
+        patch.playerFavorPercent = 50;
+      }
+      if (Object.keys(patch).length > 0) {
+        tx.update(ref, patch);
       }
     });
     return jsonOk({ ok: true });

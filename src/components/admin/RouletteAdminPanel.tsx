@@ -44,11 +44,39 @@ type StateRow = {
   endsAt: number | null;
   winningNumber: number | null;
   rtpMode: string;
+  playerFavorPercent: number;
   manualNextNumber: number | null;
   spinDurationSec: number;
   totalHouseProfit: number;
   recentResults: number[];
 };
+
+type AdminRtpMode = "house" | "fair" | "player" | "mixed" | "manual";
+
+function readAdminRtpMode(raw: string): AdminRtpMode {
+  if (raw === "manual") return "manual";
+  if (raw === "fair") return "fair";
+  if (raw === "player") return "player";
+  if (raw === "mixed") return "mixed";
+  return "house";
+}
+
+function rtpModeLabel(m: AdminRtpMode): string {
+  switch (m) {
+    case "house":
+      return "House favored";
+    case "fair":
+      return "Fair wheel";
+    case "player":
+      return "Player favored";
+    case "mixed":
+      return "Mixed odds";
+    case "manual":
+      return "Manual next spin";
+    default:
+      return m;
+  }
+}
 
 export function RouletteAdminPanel() {
   const [token, setToken] = useState<string | null>(null);
@@ -58,7 +86,8 @@ export function RouletteAdminPanel() {
   const [withdrawals, setWithdrawals] = useState<WRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [spinDurationSec, setSpinDurationSec] = useState("30");
-  const [rtpMode, setRtpMode] = useState<"auto" | "manual">("auto");
+  const [rtpMode, setRtpMode] = useState<AdminRtpMode>("house");
+  const [playerFavorPercent, setPlayerFavorPercent] = useState("50");
   const [manualNext, setManualNext] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -79,20 +108,24 @@ export function RouletteAdminPanel() {
         return;
       }
       const d = snap.data();
+      const pfp = Number(d.playerFavorPercent);
       setState({
         phase: String(d.phase),
         roundId: String(d.roundId),
         sequence: Number(d.sequence) || 1,
         endsAt: d.endsAt?.toMillis?.() ?? null,
         winningNumber: d.winningNumber != null ? Number(d.winningNumber) : null,
-        rtpMode: String(d.rtpMode || "auto"),
+        rtpMode: String(d.rtpMode || "house"),
+        playerFavorPercent: Number.isFinite(pfp) ? Math.round(pfp) : 50,
         manualNextNumber: d.manualNextNumber != null ? Number(d.manualNextNumber) : null,
         spinDurationSec: Number(d.spinDurationSec) || 30,
         totalHouseProfit: Number(d.totalHouseProfit) || 0,
         recentResults: Array.isArray(d.recentResults) ? d.recentResults.map(Number) : [],
       });
       setSpinDurationSec(String(Number(d.spinDurationSec) || 30));
-      setRtpMode(d.rtpMode === "manual" ? "manual" : "auto");
+      setRtpMode(readAdminRtpMode(String(d.rtpMode || "house")));
+      setPlayerFavorPercent(String(Number.isFinite(pfp) ? Math.round(pfp) : 50));
+      setManualNext(d.manualNextNumber != null ? String(Number(d.manualNextNumber)) : "");
     });
     return () => unsub();
   }, []);
@@ -184,18 +217,28 @@ export function RouletteAdminPanel() {
     setSaving(true);
     try {
       let manualNextNumber: number | null = null;
-      if (manualNext.trim() !== "") {
+      if (rtpMode === "manual") {
+        if (manualNext.trim() === "") {
+          setMsg("Manual strategy requires a winning number 0–36.");
+          return;
+        }
         const m = parseInt(manualNext, 10);
         if (Number.isNaN(m) || m < 0 || m > 36) {
-          setMsg("Manual number must be 0–36 or empty");
+          setMsg("Manual number must be 0–36.");
           return;
         }
         manualNextNumber = m;
       }
+      const pfp = Math.round(Number(playerFavorPercent));
+      if (!Number.isFinite(pfp) || pfp < 0 || pfp > 100) {
+        setMsg("Player favor % must be 0–100");
+        return;
+      }
       await roulettePatch("/api/roulette/admin/settings", token, {
         spinDurationSec: Number(spinDurationSec),
         rtpMode,
-        manualNextNumber,
+        playerFavorPercent: pfp,
+        manualNextNumber: rtpMode === "manual" ? manualNextNumber : null,
       });
       setMsg("Settings saved (timer changes apply on next round).");
     } catch (e) {
@@ -234,7 +277,7 @@ export function RouletteAdminPanel() {
       {msg ? <p className="text-sm text-amber-300">{msg}</p> : null}
 
       <section className="rounded-xl border border-amber-900/30 bg-black/30 p-5">
-        <h2 className="text-lg font-semibold text-white">Live round &amp; RTP</h2>
+        <h2 className="text-lg font-semibold text-white">Live round &amp; winning strategy</h2>
         {state ? (
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <p className="text-zinc-400">
@@ -256,6 +299,16 @@ export function RouletteAdminPanel() {
               Model profit (stakes − payouts, cumulative):{" "}
               <span className="font-mono text-emerald-400">₹{state.totalHouseProfit}</span>
             </p>
+            <p className="text-zinc-400 sm:col-span-2">
+              Active strategy:{" "}
+              <span className="text-white">{rtpModeLabel(readAdminRtpMode(state.rtpMode))}</span>
+              {readAdminRtpMode(state.rtpMode) === "mixed" ? (
+                <span className="text-zinc-500">
+                  {" "}
+                  (player-favor roll: {state.playerFavorPercent}%)
+                </span>
+              ) : null}
+            </p>
           </div>
         ) : (
           <p className="mt-4 text-zinc-500">No roulette_state yet — open /roulette once with server keys.</p>
@@ -274,18 +327,47 @@ export function RouletteAdminPanel() {
             />
           </label>
           <label className="block text-xs text-zinc-500">
-            RTP mode
+            Winning strategy
             <select
               value={rtpMode}
-              onChange={(e) => setRtpMode(e.target.value as "auto" | "manual")}
-              className="mt-1 block w-full max-w-xs rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white"
+              onChange={(e) => setRtpMode(e.target.value as AdminRtpMode)}
+              className="mt-1 block w-full max-w-md rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white"
             >
-              <option value="auto">Auto (minimum payout number)</option>
-              <option value="manual">Manual (next spin only)</option>
+              <option value="house">
+                House favored — minimize payouts when players bet (strong house edge)
+              </option>
+              <option value="fair">
+                Fair wheel — random 0–36 each spin; ignores where money is placed
+              </option>
+              <option value="player">
+                Player favored — maximize payouts when players bet
+              </option>
+              <option value="mixed">
+                Mixed — percent of rounds favor players (when bets exist); rest favor house
+              </option>
+              <option value="manual">Manual — force winning number on next resolve only</option>
             </select>
           </label>
+          <p className="max-w-xl text-[11px] leading-relaxed text-zinc-600">
+            With no bets on a round, every strategy uses a fair random spin. “Mixed” uses the percentage
+            below: on each round with bets, that chance picks the best outcome for players (highest total
+            payout); otherwise the house-favored outcome is used.
+          </p>
+          {rtpMode === "mixed" ? (
+            <label className="block text-xs text-zinc-500">
+              Player-favor chance (0–100% per round with bets)
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={playerFavorPercent}
+                onChange={(e) => setPlayerFavorPercent(e.target.value)}
+                className="mt-1 w-full max-w-xs rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white"
+              />
+            </label>
+          ) : null}
           <label className="block text-xs text-zinc-500">
-            Manual winning number (0–36, next resolve only — leave empty for auto)
+            Manual winning number (0–36, next resolve only — leave empty to skip)
             <input
               type="number"
               min={0}
@@ -293,7 +375,8 @@ export function RouletteAdminPanel() {
               value={manualNext}
               onChange={(e) => setManualNext(e.target.value)}
               placeholder="e.g. 17"
-              className="mt-1 w-full max-w-xs rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white"
+              disabled={rtpMode !== "manual"}
+              className="mt-1 w-full max-w-xs rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white disabled:opacity-40"
             />
           </label>
           <button

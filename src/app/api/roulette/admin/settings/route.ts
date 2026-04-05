@@ -1,7 +1,10 @@
 import { getAdminDb, getFirebaseAdminApp, isFirebaseAdminConfigured } from "@/lib/firebase-admin";
 import { ApiError, jsonError, jsonOk, requireAdmin } from "@/lib/roulette/api-auth";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
+import type { RtpMode } from "@/lib/roulette/types";
 import type { RouletteStateDoc } from "@/lib/roulette/server-state";
+
+const RTP_MODES = new Set<RtpMode>(["auto", "house", "fair", "player", "mixed", "manual"]);
 
 export async function PATCH(request: Request) {
   try {
@@ -12,7 +15,8 @@ export async function PATCH(request: Request) {
     await requireAdmin(request);
     const body = (await request.json()) as {
       spinDurationSec?: number;
-      rtpMode?: "auto" | "manual";
+      rtpMode?: RtpMode;
+      playerFavorPercent?: number;
       manualNextNumber?: number | null;
     };
 
@@ -31,8 +35,18 @@ export async function PATCH(request: Request) {
       }
       updates.spinDurationSec = Math.floor(n);
     }
-    if (body.rtpMode === "auto" || body.rtpMode === "manual") {
+    if (body.rtpMode != null) {
+      if (!RTP_MODES.has(body.rtpMode)) {
+        throw new ApiError(400, "Invalid rtpMode");
+      }
       updates.rtpMode = body.rtpMode;
+    }
+    if (body.playerFavorPercent != null) {
+      const p = Number(body.playerFavorPercent);
+      if (!Number.isFinite(p) || p < 0 || p > 100) {
+        throw new ApiError(400, "playerFavorPercent must be 0–100");
+      }
+      updates.playerFavorPercent = Math.round(p);
     }
     if (body.manualNextNumber !== undefined) {
       if (body.manualNextNumber === null) {

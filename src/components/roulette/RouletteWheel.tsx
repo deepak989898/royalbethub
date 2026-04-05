@@ -16,12 +16,15 @@ export function RouletteWheel({
   spinTrigger,
   phase,
   highlightWinner,
+  /** Last winning number (e.g. `recentResults[0]`) — used to park the ball when idle in betting on first paint. */
+  idleRestNumber,
 }: {
   winningNumber: number | null;
   spinTrigger: number;
   phase: "betting" | "result";
   /** When false during result, the wheel does not emphasize the winning pocket (ball still animates). */
   highlightWinner: boolean;
+  idleRestNumber: number | null;
 }) {
   const ballAngle = useMotionValue(0);
   const wheelRotation = useMotionValue(0);
@@ -47,14 +50,24 @@ export function RouletteWheel({
   const showWinOverlay =
     highlightWinner && winningNumber != null && !winOverlayDismissed;
 
-  /** Hydration / refresh while a result is already showing: snap ball + wheel (no spin). */
+  /**
+   * Initial / refresh snap (spinTrigger === 0 only). After any in-session spin, motion values stay as animated.
+   * - Result + winning: ball over winning pocket (wheel angle as-is, usually 0 on load).
+   * - Betting + last recent: wheel at 0°, ball over that pocket so the wheel matches the strip on open.
+   */
   useLayoutEffect(() => {
-    if (phase === "result" && winningNumber != null && spinTrigger === 0) {
+    if (spinTrigger !== 0) return;
+    if (phase === "result" && winningNumber != null) {
       const w = wheelRotation.get();
       const L = pocketCenterAngleDegreesFromTop(winningNumber);
       ballAngle.set((((L + w) % 360) + 360) % 360);
+      return;
     }
-  }, [phase, winningNumber, spinTrigger, ballAngle, wheelRotation]);
+    if (phase === "betting" && idleRestNumber != null) {
+      wheelRotation.set(0);
+      ballAngle.set(pocketCenterAngleDegreesFromTop(idleRestNumber));
+    }
+  }, [phase, winningNumber, spinTrigger, idleRestNumber, ballAngle, wheelRotation]);
 
   useEffect(() => {
     if (spinTrigger === 0 || winningNumber == null) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import {
   BET_STEP,
   MAX_BET_AMOUNT,
@@ -18,15 +18,9 @@ export function BetAmountControl({
   value: number;
   onChange: (n: number) => void;
   disabled?: boolean;
-  /** Optional balance cap hint (still allows typing; place validates server-side) */
+  /** Optional balance cap for quick-pick clamping (place still validates server-side). */
   maxHint?: number | null;
 }) {
-  const [text, setText] = useState(String(value));
-
-  useEffect(() => {
-    setText(String(value));
-  }, [value]);
-
   const clampAndSnap = useCallback(
     (raw: number) => {
       let n = Math.floor(raw / BET_STEP) * BET_STEP;
@@ -41,36 +35,13 @@ export function BetAmountControl({
     [maxHint]
   );
 
-  function commitFromInput() {
-    const parsed = parseInt(text.replace(/\D/g, ""), 10);
-    if (Number.isNaN(parsed)) {
-      setText(String(value));
-      return;
-    }
-    const n = clampAndSnap(parsed);
-    onChange(n);
-    setText(String(n));
-  }
-
   return (
     <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-      <div className="flex flex-wrap items-end gap-2 lg:gap-3">
-        <label className="block min-w-0 flex-1 text-[10px] uppercase tracking-wider text-zinc-500 lg:min-w-[8rem] lg:text-xs">
-          Stake ₹ (×{BET_STEP})
-          <input
-            type="text"
-            inputMode="numeric"
-            disabled={disabled}
-            value={text}
-            onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ""))}
-            onBlur={() => commitFromInput()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitFromInput();
-            }}
-            className="mt-0.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-amber-600/50 disabled:opacity-40 lg:mt-1 lg:rounded-xl lg:px-3 lg:py-2 lg:text-sm"
-          />
-        </label>
-        <p className="hidden text-[10px] text-zinc-600 sm:block">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500 lg:text-xs">
+          Stake ₹ (×{BET_STEP}) — <span className="font-mono text-amber-200">{value}</span>
+        </p>
+        <p className="text-[10px] text-zinc-600">
           Min ₹{MIN_BET_AMOUNT}, max ₹{MAX_BET_AMOUNT.toLocaleString("en-IN")}
         </p>
       </div>
@@ -83,11 +54,7 @@ export function BetAmountControl({
               key={c}
               type="button"
               disabled={disabled}
-              onClick={() => {
-                const n = clampAndSnap(c);
-                onChange(n);
-                setText(String(n));
-              }}
+              onClick={() => onChange(clampAndSnap(c))}
               className={`h-7 min-w-[1.75rem] rounded-md border px-1.5 text-[10px] font-bold transition disabled:opacity-40 lg:h-10 lg:min-w-[2.5rem] lg:rounded-full lg:border-2 lg:px-2 lg:text-xs ${
                 active
                   ? "border-amber-300 bg-gradient-to-br from-amber-500 to-amber-700 text-black ring-1 ring-amber-400/40 lg:ring-2"

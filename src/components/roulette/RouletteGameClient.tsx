@@ -627,6 +627,11 @@ export function RouletteGameClient() {
               spinTrigger={spinRev}
               phase={game?.phase ?? "betting"}
               highlightWinner={game?.phase === "result" && spinComplete}
+              idleRestNumber={
+                game?.phase === "betting" && game.recentResults.length > 0
+                  ? game.recentResults[0]!
+                  : null
+              }
             />
           </div>
 

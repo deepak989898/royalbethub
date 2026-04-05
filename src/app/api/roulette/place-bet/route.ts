@@ -17,7 +17,13 @@ import {
   isValidStreetKey,
 } from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
-import { BET_STEP, isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
+import {
+  BET_STEP,
+  isValidBetStake,
+  MAX_BET_AMOUNT,
+  MAX_BETS_PER_PLACE_REQUEST,
+  MIN_BET_AMOUNT,
+} from "@/lib/roulette/types";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import type { RouletteStateDoc } from "@/lib/roulette/server-state";
 
@@ -57,8 +63,11 @@ export async function POST(request: Request) {
     if (!roundId || !Array.isArray(bets) || bets.length === 0) {
       throw new ApiError(400, "roundId and bets required");
     }
-    if (bets.length > 40) {
-      throw new ApiError(400, "Too many bets in one request");
+    if (bets.length > MAX_BETS_PER_PLACE_REQUEST) {
+      throw new ApiError(
+        400,
+        `At most ${MAX_BETS_PER_PLACE_REQUEST} bet lines per submit — place in batches or wait for the next round`
+      );
     }
 
     for (const b of bets) {

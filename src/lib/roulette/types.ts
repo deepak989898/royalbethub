@@ -107,6 +107,12 @@ export const MIN_BET_AMOUNT = 20;
 export const MAX_BET_AMOUNT = 500_000;
 export const BET_STEP = 10;
 
+/**
+ * Max bet lines per place-bet request (Firestore transaction write limit ~500; balance still enforced).
+ * Users can call place again in the same round if they need more lines.
+ */
+export const MAX_BETS_PER_PLACE_REQUEST = 450;
+
 export function isValidBetStake(n: number): boolean {
   return (
     Number.isFinite(n) &&

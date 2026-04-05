@@ -46,5 +46,33 @@ service cloud.firestore {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow write: if false;
     }
+
+    /** Roulette simulator — all writes via Admin SDK / API routes only */
+    match /roulette_state/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /roulette_bets/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /roulette_users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /roulette_transactions/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /roulette_withdrawals/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
   }
 }

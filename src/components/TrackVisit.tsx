@@ -12,7 +12,7 @@ export function TrackVisit() {
 
   useEffect(() => {
     if (!isFirebaseConfigured() || !pathname) return;
-    if (pathname.startsWith("/admin")) return;
+    if (pathname.startsWith("/admin") || pathname.startsWith("/roulette")) return;
     if (pathname.startsWith("/go/")) return;
     const key = `${FLAG}:${pathname}`;
     if (sessionStorage.getItem(key)) return;

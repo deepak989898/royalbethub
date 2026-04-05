@@ -16,6 +16,7 @@ import {
 import { signOut } from "firebase/auth";
 import {
   BarChart3,
+  Dices,
   ExternalLink,
   Images,
   Loader2,
@@ -32,6 +33,7 @@ import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { normalizeCasinoSite } from "@/lib/casino-utils";
 import { normalizeHeroSlide } from "@/lib/hero-utils";
 import type { AnalyticsEvent, BonusLead, CasinoSite, HeroSlide } from "@/lib/types";
+import { RouletteAdminPanel } from "./RouletteAdminPanel";
 
 type EventRow = AnalyticsEvent & { id: string };
 
@@ -48,6 +50,7 @@ export function AdminDashboard() {
   const [heroModal, setHeroModal] = useState(false);
   const [heroEditingId, setHeroEditingId] = useState<string | null>(null);
   const [heroForm, setHeroForm] = useState<Partial<HeroSlide>>({});
+  const [adminTab, setAdminTab] = useState<"hub" | "roulette">("hub");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -306,7 +309,7 @@ export function AdminDashboard() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-white">Royal Bet Hub — Admin</h1>
-            <p className="text-sm text-zinc-500">Sites, hero slider, clicks, bonus leads</p>
+            <p className="text-sm text-zinc-500">Sites, hero slider, roulette control, bonus leads</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -357,7 +360,41 @@ export function AdminDashboard() {
         </div>
       </header>
 
+      <div className="border-b border-white/10 bg-black/20">
+        <div className="mx-auto flex max-w-6xl gap-2 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setAdminTab("hub")}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
+              adminTab === "hub"
+                ? "bg-amber-500/20 text-amber-200"
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Hub
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdminTab("roulette")}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
+              adminTab === "roulette"
+                ? "bg-violet-500/20 text-violet-200"
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            }`}
+          >
+            <Dices className="h-4 w-4" />
+            Roulette
+          </button>
+        </div>
+      </div>
+
       <main className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6">
+        {adminTab === "roulette" ? (
+          <RouletteAdminPanel />
+        ) : null}
+        {adminTab === "hub" ? (
+          <>
         <section>
           <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
             <BarChart3 className="h-5 w-5 text-amber-400" />
@@ -625,6 +662,8 @@ export function AdminDashboard() {
             </table>
           </div>
         </section>
+          </>
+        ) : null}
       </main>
 
       {modal ? (

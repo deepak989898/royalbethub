@@ -8,6 +8,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/#compare", label: "Casinos" },
+  { href: "/roulette", label: "Play roulette" },
   { href: "/bonus-offers", label: "Bonuses" },
   { href: "/blog", label: "Blog" },
   { href: "/legal-warning", label: "Legal" },

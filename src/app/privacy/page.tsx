@@ -15,8 +15,8 @@ export default function PrivacyPage() {
       <p className="text-[var(--text-secondary)]">Last updated: April 2026</p>
       <h2>Who we are</h2>
       <p>
-        RoyalBetHub operates this website as an affiliate comparison hub. Contact paths are
-        published on the site footer/admin flows as you configure them.
+        RoyalBetHub operates this website as a comparison hub. Contact paths are published on the
+        site footer as you configure them.
       </p>
       <h2>Data we may collect</h2>
       <ul>

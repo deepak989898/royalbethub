@@ -20,11 +20,11 @@ const siteUrl = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "RoyalBetHub | Best casino apps & online betting India (affiliate hub)",
+    default: "RoyalBetHub | Best casino apps & online betting India",
     template: "%s | RoyalBetHub",
   },
   description:
-    "Compare the best casino apps in India, online betting real money options, welcome bonuses, UPI-friendly brands, and editorial reviews. 18+ affiliate hub—not a gambling operator.",
+    "Compare the best casino apps in India, online betting real money options, welcome bonuses, UPI-friendly brands, and editorial reviews. 18+ only—not a gambling operator.",
   keywords: [
     "RoyalBetHub",
     "best casino apps in India",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: "RoyalBetHub",
-    title: "RoyalBetHub — WIN LIKE ROYALTY (affiliate comparisons)",
+    title: "RoyalBetHub — WIN LIKE ROYALTY",
     description:
       "India-focused casino & betting comparisons, bonus offers, reviews, and blog guides. 18+ only.",
   },

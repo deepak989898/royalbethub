@@ -72,8 +72,8 @@ export const DEFAULT_CASINO_SITES: Omit<CasinoSite, never>[] = [
     name: "JeetCity (sample)",
     tagline: "Replace this URL with your real partner link",
     description:
-      "Placeholder listing so you can practise admin edits. Point the URL to your tracked affiliate link.",
-    url: "https://example.com/jeetcity-affiliate",
+      "Placeholder listing so you can practise admin edits. Point the URL to your tracked partner link.",
+    url: "https://example.com/jeetcity-partner",
     pros: ["Editable in admin", "Use your tracking params", "Hide when not needed"],
     regions: ["IN"],
     rating: 4.2,
@@ -86,7 +86,7 @@ export const DEFAULT_CASINO_SITES: Omit<CasinoSite, never>[] = [
     tagline: "Second placeholder — swap for a live offer",
     description:
       "Use admin to change name, copy, and URL. Disable the row if you are not promoting this brand.",
-    url: "https://example.com/parimatch-affiliate",
+    url: "https://example.com/parimatch-partner",
     pros: ["Quick comparison slot on your hub", "Full CRUD from admin"],
     regions: ["IN"],
     rating: 4.3,

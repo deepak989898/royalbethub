@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -16,6 +17,7 @@ import { signOut } from "firebase/auth";
 import {
   BarChart3,
   ExternalLink,
+  Images,
   Loader2,
   LogOut,
   Pencil,
@@ -25,9 +27,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DEFAULT_CASINO_SITES } from "@/lib/default-sites";
+import { DEFAULT_HERO_SLIDES } from "@/lib/default-hero-slides";
 import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { normalizeCasinoSite } from "@/lib/casino-utils";
-import type { AnalyticsEvent, BonusLead, CasinoSite } from "@/lib/types";
+import { normalizeHeroSlide } from "@/lib/hero-utils";
+import type { AnalyticsEvent, BonusLead, CasinoSite, HeroSlide } from "@/lib/types";
 
 type EventRow = AnalyticsEvent & { id: string };
 
@@ -35,10 +39,15 @@ export function AdminDashboard() {
   const [sites, setSites] = useState<CasinoSite[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [leads, setLeads] = useState<(BonusLead & { id: string })[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
+  const [seedingHero, setSeedingHero] = useState(false);
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<CasinoSite>>({});
+  const [heroModal, setHeroModal] = useState(false);
+  const [heroEditingId, setHeroEditingId] = useState<string | null>(null);
+  const [heroForm, setHeroForm] = useState<Partial<HeroSlide>>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -70,6 +79,14 @@ export function AdminDashboard() {
         lRows.push({ id: d.id, ...(d.data() as BonusLead) });
       });
       setLeads(lRows);
+
+      const hq = query(collection(getDb(), "hero_slides"), orderBy("sortOrder", "asc"));
+      const hSnap = await getDocs(hq);
+      const hRows: HeroSlide[] = [];
+      hSnap.forEach((d) => {
+        hRows.push(normalizeHeroSlide(d.data() as Record<string, unknown>, d.id));
+      });
+      setHeroSlides(hRows);
     } finally {
       setLoading(false);
     }
@@ -105,6 +122,84 @@ export function AdminDashboard() {
     } finally {
       setSeeding(false);
     }
+  }
+
+  async function handleSeedHero() {
+    if (!confirm("Create or overwrite default hero slides (fixed IDs)?")) return;
+    setSeedingHero(true);
+    try {
+      const batch = writeBatch(getDb());
+      for (const s of DEFAULT_HERO_SLIDES) {
+        const ref = doc(getDb(), "hero_slides", s.id);
+        batch.set(ref, {
+          imageUrl: s.imageUrl,
+          title: s.title,
+          benefit: s.benefit,
+          ctaUrl: s.ctaUrl,
+          ctaLabel: s.ctaLabel,
+          sortOrder: s.sortOrder,
+          active: s.active,
+        });
+      }
+      await batch.commit();
+      await refresh();
+    } finally {
+      setSeedingHero(false);
+    }
+  }
+
+  function openHeroAdd() {
+    setHeroEditingId(null);
+    setHeroForm({
+      imageUrl: "https://",
+      title: "",
+      benefit: "",
+      ctaUrl: "https://",
+      ctaLabel: "Play & sign up",
+      sortOrder: (heroSlides[heroSlides.length - 1]?.sortOrder ?? 0) + 10,
+      active: true,
+    });
+    setHeroModal(true);
+  }
+
+  function openHeroEdit(s: HeroSlide) {
+    setHeroEditingId(s.id);
+    setHeroForm({ ...s });
+    setHeroModal(true);
+  }
+
+  async function saveHero() {
+    const imageUrl = (heroForm.imageUrl || "").trim();
+    const title = (heroForm.title || "").trim();
+    const benefit = (heroForm.benefit || "").trim();
+    const ctaUrl = (heroForm.ctaUrl || "").trim();
+    const ctaLabel = (heroForm.ctaLabel || "Play & sign up").trim();
+    if (!imageUrl || !title || !ctaUrl) {
+      alert("Image URL, title, and CTA URL are required.");
+      return;
+    }
+    const payload = {
+      imageUrl,
+      title,
+      benefit,
+      ctaUrl,
+      ctaLabel,
+      sortOrder: Number(heroForm.sortOrder) || 0,
+      active: Boolean(heroForm.active),
+    };
+    if (heroEditingId) {
+      await setDoc(doc(getDb(), "hero_slides", heroEditingId), payload);
+    } else {
+      await addDoc(collection(getDb(), "hero_slides"), payload);
+    }
+    setHeroModal(false);
+    await refresh();
+  }
+
+  async function removeHero(id: string) {
+    if (!confirm("Delete this hero slide?")) return;
+    await deleteDoc(doc(getDb(), "hero_slides", id));
+    await refresh();
   }
 
   function openAdd() {
@@ -211,7 +306,7 @@ export function AdminDashboard() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-white">Royal Bet Hub — Admin</h1>
-            <p className="text-sm text-zinc-500">Sites, clicks, visits, bonus leads</p>
+            <p className="text-sm text-zinc-500">Sites, hero slider, clicks, bonus leads</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -220,6 +315,19 @@ export function AdminDashboard() {
             >
               View site
             </Link>
+            <button
+              type="button"
+              onClick={() => void handleSeedHero()}
+              disabled={seedingHero}
+              className="inline-flex items-center gap-2 rounded-lg bg-violet-600/80 px-3 py-2 text-sm font-medium text-white hover:bg-violet-600 disabled:opacity-50"
+            >
+              {seedingHero ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Images className="h-4 w-4" />
+              )}
+              Seed hero slides
+            </button>
             <button
               type="button"
               onClick={() => void handleSeed()}
@@ -273,6 +381,80 @@ export function AdminDashboard() {
               </div>
             </div>
           )}
+        </section>
+
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+              <Images className="h-5 w-5 text-violet-400" />
+              Homepage hero slider
+            </h2>
+            <button
+              type="button"
+              onClick={() => openHeroAdd()}
+              className="inline-flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-400"
+            >
+              <Plus className="h-4 w-4" />
+              Add slide
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-zinc-500">
+            Image URL, headline, benefit text, and CTA URL. Shown at top of homepage; CTA opens in a
+            new tab. Swipe on mobile.
+          </p>
+          <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="border-b border-white/10 bg-black/20 text-zinc-500">
+                <tr>
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">CTA URL</th>
+                  <th className="px-4 py-3">Order</th>
+                  <th className="px-4 py-3">Active</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {heroSlides.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                      No slides. Use Seed hero slides or Add slide.
+                    </td>
+                  </tr>
+                ) : (
+                  heroSlides.map((h) => (
+                    <tr key={h.id} className="border-b border-white/5">
+                      <td className="px-4 py-3 font-medium text-white">{h.title}</td>
+                      <td className="max-w-[200px] truncate px-4 py-3 text-xs text-amber-200/80">
+                        <a href={h.ctaUrl} target="_blank" rel="noreferrer" className="hover:underline">
+                          {h.ctaUrl}
+                        </a>
+                      </td>
+                      <td className="px-4 py-3">{h.sortOrder}</td>
+                      <td className="px-4 py-3">{h.active ? "Yes" : "No"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openHeroEdit(h)}
+                            className="rounded p-2 text-zinc-400 hover:bg-white/10 hover:text-white"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeHero(h.id)}
+                            className="rounded p-2 text-red-400/80 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section>
@@ -491,7 +673,7 @@ export function AdminDashboard() {
                 />
               </label>
               <label className="block text-xs text-zinc-500">
-                Affiliate URL
+                Partner / destination URL
                 <input
                   value={form.url || ""}
                   onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
@@ -649,6 +831,101 @@ export function AdminDashboard() {
                 type="button"
                 onClick={() => void saveSite()}
                 className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#1a1005] hover:bg-amber-400"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {heroModal ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
+          <div
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#12101a] p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+          >
+            <h3 className="text-lg font-semibold text-white">
+              {heroEditingId ? "Edit hero slide" : "Add hero slide"}
+            </h3>
+            <div className="mt-4 space-y-3">
+              <label className="block text-xs text-zinc-500">
+                Image URL (full https URL)
+                <input
+                  value={heroForm.imageUrl || ""}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, imageUrl: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                  placeholder="https://…"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Headline (title)
+                <input
+                  value={heroForm.title || ""}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, title: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Benefit / subtitle
+                <textarea
+                  value={heroForm.benefit || ""}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, benefit: e.target.value }))}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                CTA opens in new tab (destination URL)
+                <input
+                  value={heroForm.ctaUrl || ""}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, ctaUrl: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                  placeholder="https://…"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Button label
+                <input
+                  value={heroForm.ctaLabel || ""}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, ctaLabel: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                  placeholder="Play & sign up"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Sort order (lower first)
+                <input
+                  type="number"
+                  value={heroForm.sortOrder ?? 0}
+                  onChange={(e) =>
+                    setHeroForm((f) => ({ ...f, sortOrder: Number(e.target.value) }))
+                  }
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={Boolean(heroForm.active)}
+                  onChange={(e) => setHeroForm((f) => ({ ...f, active: e.target.checked }))}
+                />
+                Active (shown on homepage)
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setHeroModal(false)}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveHero()}
+                className="rounded-lg bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-400"
               >
                 Save
               </button>

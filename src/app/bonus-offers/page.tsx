@@ -6,7 +6,7 @@ import { BonusLeadForm } from "@/components/BonusLeadForm";
 export const metadata: Metadata = {
   title: "Bonus offers — welcome & no-deposit style deals",
   description:
-    "Welcome offers, no-deposit style promotions (where available), and hub-exclusive bonus eligibility for Indian players. 18+ affiliate hub.",
+    "Welcome offers, no-deposit style promotions (where available), and hub-exclusive bonus eligibility for Indian players. 18+ only.",
   keywords: [
     "casino welcome bonus India",
     "no deposit bonus India",

@@ -6,8 +6,10 @@ import { Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { getDb, isFirebaseConfigured } from "@/lib/firebase";
 import { filterCasinosForIndia, normalizeCasinoSite } from "@/lib/casino-utils";
-import type { CasinoSite } from "@/lib/types";
+import { normalizeHeroSlide } from "@/lib/hero-utils";
+import type { CasinoSite, HeroSlide } from "@/lib/types";
 import { CasinoCard } from "./CasinoCard";
+import { HeroSlider } from "./HeroSlider";
 import { BonusLeadForm } from "./BonusLeadForm";
 import { LimitedBonusCountdown } from "./LimitedBonusCountdown";
 import { LiveWinsTicker } from "./LiveWinsTicker";
@@ -16,6 +18,7 @@ import { TestimonialsSection } from "./TestimonialsSection";
 
 export function HomeClient() {
   const [sites, setSites] = useState<CasinoSite[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -35,8 +38,17 @@ export function HomeClient() {
           const data = normalizeCasinoSite(d.data() as Record<string, unknown>, d.id);
           if (data.active !== false) rows.push(data);
         });
+
+        const hq = query(collection(getDb(), "hero_slides"), orderBy("sortOrder", "asc"));
+        const hSnap = await getDocs(hq);
+        const hRows: HeroSlide[] = [];
+        hSnap.forEach((d) => {
+          hRows.push(normalizeHeroSlide(d.data() as Record<string, unknown>, d.id));
+        });
+
         if (!cancelled) {
           setSites(filterCasinosForIndia(rows));
+          setHeroSlides(hRows);
           setErr(null);
         }
       } catch {
@@ -56,6 +68,8 @@ export function HomeClient() {
 
   return (
     <>
+      <HeroSlider slides={heroSlides} />
+
       <section className="relative overflow-hidden px-4 pb-12 pt-8 sm:px-6 sm:pt-10">
         <div
           className="pointer-events-none absolute inset-0 opacity-30 dark:opacity-40"
@@ -74,7 +88,7 @@ export function HomeClient() {
       <section className="relative overflow-hidden px-4 pb-16 sm:px-6">
         <div className="relative mx-auto max-w-6xl text-center">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400/90">
-            India-focused affiliate picks
+            India-focused picks
           </p>
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
             Best casino &amp; betting apps{" "}
@@ -84,8 +98,7 @@ export function HomeClient() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--text-secondary)]">
             RoyalBetHub explains what each brand is best at—UPI-friendly flows, sports depth, slots,
-            and live tables. We track outbound clicks and may earn a commission when you sign up
-            through our links.
+            and live tables. Outbound partner links open in a new tab so you can compare safely.
           </p>
           <p className="mx-auto mt-4 max-w-2xl text-sm text-[var(--text-tertiary)]">
             Target topics we cover in the{" "}
@@ -99,7 +112,7 @@ export function HomeClient() {
             {[
               { icon: Shield, t: "Transparent comparisons", d: "Why a site fits your style." },
               { icon: Zap, t: "Tracked partner links", d: "CTAs open in a new tab for safety." },
-              { icon: TrendingUp, t: "Bonus + promo codes", d: "See cards, offers page, and admin." },
+              { icon: TrendingUp, t: "Bonus + promo codes", d: "See cards and the bonus offers page." },
             ].map(({ icon: Icon, t, d }) => (
               <div
                 key={t}
@@ -143,9 +156,8 @@ export function HomeClient() {
             </div>
           ) : sites.length === 0 ? (
             <p className="mt-10 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-8 text-[var(--text-secondary)]">
-              No casinos yet. Configure Firebase, deploy rules, then sign in to{" "}
-              <strong className="text-[var(--text-primary)]">Admin</strong> and click{" "}
-              <strong className="text-[var(--text-primary)]">Seed default casinos</strong>.
+              No casinos yet. After Firebase is configured and rules are deployed, listings can be
+              added from the dashboard.
             </p>
           ) : (
             <div className="mt-10 grid gap-6 sm:grid-cols-2">

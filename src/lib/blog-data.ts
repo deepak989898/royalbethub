@@ -61,7 +61,7 @@ export const BLOG_POSTS: BlogPostMeta[] = [
         heading: "Trust signals",
         paragraphs: [
           "Clear terms, published limits, and responsive support correlate with fewer payout disputes—but no outcome is guaranteed.",
-          "Royal Bet Hub may earn an affiliate commission when you use our links; it does not change the price you pay.",
+          "Some outbound links are commercial or tracked; always read the operator's terms before you play.",
         ],
       },
     ],

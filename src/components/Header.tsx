@@ -45,12 +45,6 @@ export function Header() {
             50% extra
           </Link>
           <ThemeToggle />
-          <Link
-            href="/admin/login"
-            className="rounded-full border border-[var(--border)] px-3 py-1.5 text-[var(--text-secondary)] transition hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-200"
-          >
-            Admin
-          </Link>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -86,13 +80,6 @@ export function Header() {
               onClick={() => setOpen(false)}
             >
               50% extra bonus
-            </Link>
-            <Link
-              href="/admin/login"
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-[var(--text-secondary)]"
-              onClick={() => setOpen(false)}
-            >
-              Admin
             </Link>
           </div>
         </div>

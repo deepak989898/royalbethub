@@ -18,9 +18,9 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <p className="max-w-3xl leading-relaxed text-[var(--text-secondary)]">
           <strong className="text-[var(--text-primary)]">18+ only.</strong> Gambling can be addictive.
-          Play responsibly. RoyalBetHub compares operator offers and may earn a commission when you
-          sign up through our links. Offers, terms, and availability vary by region and
-          operator—always read the site&apos;s terms before depositing.
+          Play responsibly. RoyalBetHub compares operator offers for information only. Offers, terms,
+          and availability vary by region and operator—always read the site&apos;s terms before
+          depositing.
         </p>
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div>
@@ -49,16 +49,11 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
-              <li>
-                <Link href="/admin/login" className="hover:text-amber-600 dark:hover:text-amber-400">
-                  Admin login
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
         <p className="mt-10 text-xs text-[var(--text-tertiary)]">
-          © {new Date().getFullYear()} RoyalBetHub. Independent affiliate hub. Not a gambling
+          © {new Date().getFullYear()} RoyalBetHub. Independent comparison site. Not a gambling
           operator.
         </p>
       </div>

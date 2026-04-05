@@ -5,7 +5,7 @@ import { LegalProse } from "@/components/LegalProse";
 export const metadata: Metadata = {
   title: "Disclaimer",
   description:
-    "RoyalBetHub affiliate disclaimer: no wagering, no guarantees, 18+ only, and third-party operator terms apply.",
+    "RoyalBetHub disclaimer: no wagering, no guarantees, 18+ only, and third-party operator terms apply.",
 };
 
 export default function DisclaimerPage() {
@@ -14,15 +14,15 @@ export default function DisclaimerPage() {
       <h1 className="text-3xl font-bold text-[var(--text-primary)]">Disclaimer</h1>
       <p className="text-[var(--text-secondary)]">Last updated: April 2026</p>
       <p>
-        RoyalBetHub (“we”, “us”) is an <strong>independent affiliate information website</strong>.
+        RoyalBetHub (“we”, “us”) is an <strong>independent information and comparison website</strong>.
         We do not operate gambling services, accept bets, or hold player funds.
       </p>
-      <h2>Editorial &amp; affiliate relationship</h2>
+      <h2>Editorial &amp; commercial relationships</h2>
       <p>
-        Pages may contain <strong>affiliate links</strong>. If you register or deposit through those
-        links, we may receive a commission from the operator at no extra cost to you. Commercial
-        relationships can influence <em>placement or prominence</em> of listings but should not be
-        mistaken for a guarantee of outcomes, odds, or bonus eligibility.
+        Pages may contain <strong>commercial or tracked links</strong> to operators. Arrangements
+        with those operators can affect <em>placement or prominence</em> of listings; they should not
+        be mistaken for a guarantee of outcomes, odds, or bonus eligibility. Always confirm offers
+        on the operator&apos;s official site.
       </p>
       <h2>No promises of profit</h2>
       <p>

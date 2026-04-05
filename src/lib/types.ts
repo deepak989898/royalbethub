@@ -33,6 +33,18 @@ export type AnalyticsEvent = {
   sessionId?: string;
 };
 
+/** Homepage hero carousel slide (Firestore `hero_slides`). */
+export type HeroSlide = {
+  id: string;
+  imageUrl: string;
+  title: string;
+  benefit: string;
+  ctaUrl: string;
+  ctaLabel: string;
+  sortOrder: number;
+  active: boolean;
+};
+
 export type BonusLead = {
   name: string;
   email: string;

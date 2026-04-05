@@ -34,5 +34,19 @@ export interface PlaceBetPayload {
   }>;
 }
 
-export const CHIP_VALUES = [10, 50, 100, 500, 1000] as const;
-export type ChipValue = (typeof CHIP_VALUES)[number];
+/** Quick-pick amounts in the UI (any ₹10 step is allowed via input). */
+export const QUICK_BET_AMOUNTS = [20, 50, 100, 500, 1000] as const;
+
+/** Strictly greater than ₹10 → smallest valid stake is ₹20 (still in ₹10 steps). */
+export const MIN_BET_AMOUNT = 20;
+export const MAX_BET_AMOUNT = 500_000;
+export const BET_STEP = 10;
+
+export function isValidBetStake(n: number): boolean {
+  return (
+    Number.isFinite(n) &&
+    n >= MIN_BET_AMOUNT &&
+    n <= MAX_BET_AMOUNT &&
+    n % BET_STEP === 0
+  );
+}

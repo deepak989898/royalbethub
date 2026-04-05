@@ -9,7 +9,7 @@ import {
 } from "@/lib/roulette/api-auth";
 import { validateStraightSelection } from "@/lib/roulette/engine";
 import type { BetType } from "@/lib/roulette/types";
-import { CHIP_VALUES } from "@/lib/roulette/types";
+import { BET_STEP, isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import type { RouletteStateDoc } from "@/lib/roulette/server-state";
 
@@ -22,10 +22,6 @@ const ALLOWED_TYPES: BetType[] = [
   "low",
   "high",
 ];
-
-function isChipAmount(n: number): boolean {
-  return CHIP_VALUES.includes(n as (typeof CHIP_VALUES)[number]);
-}
 
 export async function POST(request: Request) {
   try {
@@ -57,8 +53,11 @@ export async function POST(request: Request) {
       if (typeof b.amount !== "number" || !Number.isFinite(b.amount) || b.amount <= 0) {
         throw new ApiError(400, "Invalid amount");
       }
-      if (!isChipAmount(b.amount)) {
-        throw new ApiError(400, `Amount must be one of: ${CHIP_VALUES.join(", ")}`);
+      if (!isValidBetStake(b.amount)) {
+        throw new ApiError(
+          400,
+          `Each stake must be ₹${MIN_BET_AMOUNT}–₹${MAX_BET_AMOUNT} in multiples of ${BET_STEP}`
+        );
       }
     }
 

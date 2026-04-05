@@ -5,8 +5,9 @@ import { useEffect, useLayoutEffect } from "react";
 import { colorOf } from "@/lib/roulette/constants";
 import {
   EUROPEAN_WHEEL_ORDER,
-  ballArmTargetDegrees,
+  ballArmTargetWorldDegrees,
   pocketCenterAngleDegreesFromTop,
+  wheelSpinTargetDegrees,
 } from "@/lib/roulette/wheel-layout";
 
 export function RouletteWheel({
@@ -19,33 +20,43 @@ export function RouletteWheel({
   phase: "betting" | "result";
 }) {
   const ballAngle = useMotionValue(0);
+  const wheelRotation = useMotionValue(0);
   const r = 160;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
 
-  /** Hydration / refresh while a result is already showing: snap ball to pocket (no spin). */
+  /** Hydration / refresh while a result is already showing: snap ball + wheel (no spin). */
   useLayoutEffect(() => {
     if (phase === "result" && winningNumber != null && spinTrigger === 0) {
-      ballAngle.set(pocketCenterAngleDegreesFromTop(winningNumber));
+      const w = wheelRotation.get();
+      const L = pocketCenterAngleDegreesFromTop(winningNumber);
+      ballAngle.set((((L + w) % 360) + 360) % 360);
     }
-  }, [phase, winningNumber, spinTrigger, ballAngle]);
+  }, [phase, winningNumber, spinTrigger, ballAngle, wheelRotation]);
 
   useEffect(() => {
     if (spinTrigger === 0 || winningNumber == null) return;
-    const current = ballAngle.get();
-    const target = ballArmTargetDegrees(winningNumber, 6, current);
-    void animate(ballAngle, target, { duration: 5.4, ease: [0.15, 0.75, 0.1, 1] });
-  }, [spinTrigger, winningNumber, ballAngle]);
+    const ease = [0.15, 0.75, 0.1, 1] as const;
+    const duration = 5.4;
+    const wheelCurrent = wheelRotation.get();
+    const wheelTarget = wheelSpinTargetDegrees(6.5, wheelCurrent);
+    const ballCurrent = ballAngle.get();
+    const ballTarget = ballArmTargetWorldDegrees(winningNumber, 6, ballCurrent, wheelTarget);
+    void animate(wheelRotation, wheelTarget, { duration, ease });
+    void animate(ballAngle, ballTarget, { duration, ease });
+  }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
 
   return (
     <div className="relative mx-auto flex w-full max-w-[min(100%,380px)] flex-col items-center">
       <p className="mb-1 text-center text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-        Ball lands in pocket
+        Wheel ↺ · ball ↻
       </p>
       <div className="relative aspect-square w-full max-w-[340px]">
         <div className="absolute inset-0 rounded-full border-4 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)]" />
 
-        {/* Static wheel — numbers stay fixed; only the ball moves */}
-        <div className="absolute inset-[10px] rounded-full">
+        <motion.div
+          className="absolute inset-[10px] rounded-full"
+          style={{ rotate: wheelRotation }}
+        >
           <svg viewBox={`-${r} -${r} ${r * 2} ${r * 2}`} className="h-full w-full">
             {EUROPEAN_WHEEL_ORDER.map((num, i) => {
               const a0 = i * step - Math.PI / 2;
@@ -99,9 +110,8 @@ export function RouletteWheel({
               </filter>
             </defs>
           </svg>
-        </div>
+        </motion.div>
 
-        {/* Orbiting ball on outer rim (spoke from center, ball at ~top of ring when angle = 0) */}
         <div className="pointer-events-none absolute inset-[4px] z-[15] flex items-center justify-center">
           <motion.div className="absolute inset-0" style={{ rotate: ballAngle }}>
             <div

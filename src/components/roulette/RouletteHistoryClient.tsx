@@ -35,6 +35,8 @@ export function RouletteHistoryClient() {
   const [user, setUser] = useState<{ uid: string } | null>(null);
   const [bets, setBets] = useState<BetRow[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
+  const [betsListenErr, setBetsListenErr] = useState<string | null>(null);
+  const [ledgerListenErr, setLedgerListenErr] = useState<string | null>(null);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -55,6 +57,7 @@ export function RouletteHistoryClient() {
     return onSnapshot(
       q,
       (snap) => {
+        setBetsListenErr(null);
         const list: BetRow[] = [];
         snap.forEach((d) => {
           const x = d.data();
@@ -69,7 +72,9 @@ export function RouletteHistoryClient() {
         });
         setBets(list);
       },
-      () => setBets([])
+      (err) => {
+        setBetsListenErr(err.message || "Could not load bets");
+      }
     );
   }, [user]);
 
@@ -87,6 +92,7 @@ export function RouletteHistoryClient() {
     return onSnapshot(
       q,
       (snap) => {
+        setLedgerListenErr(null);
         const list: LedgerRow[] = [];
         snap.forEach((d) => {
           const x = d.data();
@@ -100,7 +106,9 @@ export function RouletteHistoryClient() {
         });
         setLedger(list);
       },
-      () => setLedger([])
+      (err) => {
+        setLedgerListenErr(err.message || "Could not load ledger");
+      }
     );
   }, [user]);
 
@@ -128,6 +136,9 @@ export function RouletteHistoryClient() {
     <div className="space-y-10">
       <div>
         <h2 className="text-lg font-semibold text-amber-200/90">Your bets</h2>
+        {betsListenErr ? (
+          <p className="mt-2 text-sm text-amber-600/90">{betsListenErr}</p>
+        ) : null}
         <div className="mt-3 overflow-x-auto rounded-xl border border-zinc-800">
           <table className="w-full min-w-[360px] text-left text-sm">
             <thead className="border-b border-zinc-800 bg-zinc-950/80 text-xs uppercase text-zinc-500">
@@ -165,6 +176,9 @@ export function RouletteHistoryClient() {
       <div>
         <h2 className="text-lg font-semibold text-amber-200/90">Wallet ledger</h2>
         <p className="mt-1 text-xs text-zinc-500">Deposits, approved withdrawals, and balance snapshots.</p>
+        {ledgerListenErr ? (
+          <p className="mt-2 text-sm text-amber-600/90">{ledgerListenErr}</p>
+        ) : null}
         <div className="mt-3 overflow-x-auto rounded-xl border border-zinc-800">
           <table className="w-full min-w-[320px] text-left text-sm">
             <thead className="border-b border-zinc-800 bg-zinc-950/80 text-xs uppercase text-zinc-500">

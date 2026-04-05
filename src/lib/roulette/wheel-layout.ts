@@ -31,3 +31,28 @@ export function ballArmTargetDegrees(n: number, fullSpins: number, currentDeg: n
   if (delta < 0) delta += 360;
   return currentDeg + fullSpins * 360 + delta;
 }
+
+/** Wheel spins counter-clockwise (negative CSS degrees) while ball goes clockwise. */
+export function wheelSpinTargetDegrees(fullSpins: number, currentDeg: number): number {
+  const jitter = 15 + Math.random() * 25;
+  return currentDeg - fullSpins * 360 - jitter;
+}
+
+/**
+ * Ball is in the fixed overlay; wheel rotates underneath. Final ball angle (deg, CW from top)
+ * must match pocket center on the wheel plus wheel rotation so the ball sits in the pocket.
+ */
+export function ballArmTargetWorldDegrees(
+  n: number,
+  fullSpins: number,
+  currentBallDeg: number,
+  finalWheelRotationDeg: number
+): number {
+  const L = pocketCenterAngleDegreesFromTop(n);
+  const worldTarget = L + finalWheelRotationDeg;
+  const normalized = ((currentBallDeg % 360) + 360) % 360;
+  const tgt = ((worldTarget % 360) + 360) % 360;
+  let delta = tgt - normalized;
+  if (delta < 0) delta += 360;
+  return currentBallDeg + fullSpins * 360 + delta;
+}

@@ -12,10 +12,10 @@ import {
 import { Loader2 } from "lucide-react";
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import type { BetType } from "@/lib/roulette/types";
-import type { ChipValue } from "@/lib/roulette/types";
+import { isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
 import { roulettePost } from "@/lib/roulette/client-api";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
-import { ChipSelector } from "./ChipSelector";
+import { BetAmountControl } from "./BetAmountControl";
 import { BettingTable } from "./BettingTable";
 import { RouletteWheel } from "./RouletteWheel";
 import { useRouletteSounds } from "./useRouletteSounds";
@@ -45,6 +45,10 @@ function betKey(type: BetType, selection?: number): string {
   return type;
 }
 
+type StakeAction = { key: string; type: BetType; selection?: number; amount: number };
+
+type PlacedBet = { type: BetType; selection?: number; amount: number };
+
 export function RouletteGameClient() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -52,10 +56,14 @@ export function RouletteGameClient() {
   const [blocked, setBlocked] = useState(false);
   const [game, setGame] = useState<GameState | null>(null);
   const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
-  const [chip, setChip] = useState<ChipValue>(50);
+  const [betUnit, setBetUnit] = useState(50);
   const [staged, setStaged] = useState<Map<string, { type: BetType; selection?: number; amount: number }>>(
     () => new Map()
   );
+  const [undoStack, setUndoStack] = useState<StakeAction[]>([]);
+  const lastPlacedRef = useRef<PlacedBet[]>([]);
+  const [canRebet, setCanRebet] = useState(false);
+  const [activityToasts, setActivityToasts] = useState<{ id: string; text: string }[]>([]);
   const [placing, setPlacing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [adminMissing, setAdminMissing] = useState(false);
@@ -240,7 +248,70 @@ export function RouletteGameClient() {
 
   useEffect(() => {
     setStaged(new Map());
+    setUndoStack([]);
   }, [game?.roundId]);
+
+  function pushActivityToast(text: string) {
+    const id = crypto.randomUUID();
+    setActivityToasts((t) => [...t, { id, text }]);
+    window.setTimeout(() => {
+      setActivityToasts((t) => t.filter((x) => x.id !== id));
+    }, 4500);
+  }
+
+  function undoLastStake() {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1]!;
+      const rest = prev.slice(0, -1);
+      setStaged((s) => {
+        const next = new Map(s);
+        const cur = next.get(last.key);
+        if (!cur) return next;
+        const na = cur.amount - last.amount;
+        if (na <= 0) next.delete(last.key);
+        else
+          next.set(last.key, {
+            type: last.type,
+            selection: last.selection,
+            amount: na,
+          });
+        return next;
+      });
+      return rest;
+    });
+  }
+
+  function clearStaged() {
+    setUndoStack([]);
+    setStaged(new Map());
+  }
+
+  function rebet() {
+    if (!game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) return;
+    const list = lastPlacedRef.current;
+    if (list.length === 0) {
+      setErr("No previous bet to repeat.");
+      return;
+    }
+    const total = list.reduce((s, b) => s + b.amount, 0);
+    if (balance != null && balance < total) {
+      setErr(`Need ₹${total.toLocaleString("en-IN")} balance for this rebet.`);
+      return;
+    }
+    setErr(null);
+    const m = new Map<string, { type: BetType; selection?: number; amount: number }>();
+    for (const b of list) {
+      const k = betKey(b.type, b.selection);
+      m.set(k, {
+        type: b.type,
+        selection: b.type === "straight" ? b.selection : undefined,
+        amount: b.amount,
+      });
+    }
+    setStaged(m);
+    setUndoStack([]);
+  }
 
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -270,11 +341,13 @@ export function RouletteGameClient() {
       if (!user || blocked || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
         return;
       }
+      if (!isValidBetStake(betUnit)) return;
       const k = betKey(type, selection);
+      const add = betUnit;
+      setUndoStack((prev) => [...prev, { key: k, type, selection: type === "straight" ? selection : undefined, amount: add }]);
       setStaged((prev) => {
         const next = new Map(prev);
         const cur = next.get(k);
-        const add = chip;
         next.set(k, {
           type,
           selection: type === "straight" ? selection : undefined,
@@ -284,24 +357,37 @@ export function RouletteGameClient() {
       });
       playChip();
     },
-    [user, blocked, game, chip, playChip]
+    [user, blocked, game, betUnit, playChip]
   );
 
   async function placeStaged() {
     if (!user || !token || !game || staged.size === 0) return;
     setErr(null);
+    const bets = [...staged.values()].map((b) => ({
+      type: b.type,
+      selection: b.type === "straight" ? b.selection : undefined,
+      amount: b.amount,
+    }));
+    for (const b of bets) {
+      if (!isValidBetStake(b.amount)) {
+        setErr(
+          `Each line must be ₹${MIN_BET_AMOUNT.toLocaleString("en-IN")}–₹${MAX_BET_AMOUNT.toLocaleString("en-IN")} in multiples of ₹10.`
+        );
+        return;
+      }
+    }
     setPlacing(true);
     try {
-      const bets = [...staged.values()].map((b) => ({
-        type: b.type,
-        selection: b.type === "straight" ? b.selection : undefined,
-        amount: b.amount,
-      }));
       await roulettePost<{ ok: boolean }>("/api/roulette/place-bet", token, {
         roundId: game.roundId,
         bets,
       });
+      lastPlacedRef.current = bets;
+      setCanRebet(true);
+      const total = bets.reduce((s, b) => s + b.amount, 0);
+      pushActivityToast(`Placed ₹${total.toLocaleString("en-IN")} · ${bets.length} line(s)`);
       setStaged(new Map());
+      setUndoStack([]);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not place bets");
     } finally {
@@ -348,6 +434,18 @@ export function RouletteGameClient() {
 
   return (
     <div className="space-y-8">
+      {activityToasts.length > 0 ? (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex max-w-[min(90vw,24rem)] -translate-x-1/2 flex-col gap-2">
+          {activityToasts.map((t) => (
+            <div
+              key={t.id}
+              className="rounded-xl border border-amber-600/40 bg-zinc-950/95 px-4 py-3 text-center text-sm text-amber-100 shadow-lg backdrop-blur-sm"
+            >
+              {t.text}
+            </div>
+          ))}
+        </div>
+      ) : null}
       {err ? (
         <p className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-2 text-sm text-red-300">
           {err}
@@ -397,15 +495,18 @@ export function RouletteGameClient() {
         </div>
 
         <div className="w-full flex-1 space-y-4 lg:max-w-xl">
-          <ChipSelector
-            value={chip}
-            onChange={setChip}
+          <BetAmountControl
+            value={betUnit}
+            onChange={setBetUnit}
+            maxHint={balance}
             disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
           />
           <p className="text-xs text-zinc-500">
-            Tap the table to stack chips (₹{chip} per tap). Press place to confirm.
+            Tap the table to add ₹{betUnit.toLocaleString("en-IN")} per cell. Confirm with Place bets.
             {totalStaged > 0 ? (
-              <span className="ml-2 text-amber-400">Staged: ₹{totalStaged}</span>
+              <span className="ml-2 text-amber-400">
+                Staged: ₹{totalStaged.toLocaleString("en-IN")}
+              </span>
             ) : null}
           </p>
           <BettingTable
@@ -416,6 +517,47 @@ export function RouletteGameClient() {
             liveBets={liveBets}
             stagedKeys={stagedKeys}
           />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={
+                undoStack.length === 0 ||
+                game?.phase !== "betting" ||
+                !game?.endsAt ||
+                Date.now() >= game.endsAt
+              }
+              onClick={() => undoLastStake()}
+              className="rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              disabled={
+                staged.size === 0 ||
+                game?.phase !== "betting" ||
+                !game?.endsAt ||
+                Date.now() >= game.endsAt
+              }
+              onClick={() => clearStaged()}
+              className="rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              disabled={
+                !canRebet ||
+                game?.phase !== "betting" ||
+                !game?.endsAt ||
+                Date.now() >= game.endsAt
+              }
+              onClick={() => rebet()}
+              className="rounded-xl border border-amber-700/50 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+            >
+              Rebet
+            </button>
+          </div>
           <button
             type="button"
             disabled={

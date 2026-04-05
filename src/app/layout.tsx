@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PublicShell } from "@/components/PublicShell";
+import { ThemeProviders } from "@/components/ThemeProviders";
 import { getSiteUrl } from "@/lib/site-url";
 
 const geistSans = Geist({
@@ -68,9 +69,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full bg-[#0c0a12] font-sans text-zinc-100">
-        <PublicShell>{children}</PublicShell>
+      <body className="min-h-full bg-[var(--page-bg)] font-sans text-[var(--text-primary)] antialiased">
+        <ThemeProviders>
+          <PublicShell>{children}</PublicShell>
+        </ThemeProviders>
       </body>
     </html>
   );

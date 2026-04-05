@@ -11,10 +11,12 @@ export const metadata: Metadata = {
 export default function LegalWarningPage() {
   return (
     <LegalProse>
-      <h1 className="text-3xl font-bold text-white">
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">
         Legal warning (India) <span aria-hidden>⚠️</span>
       </h1>
-      <p className="text-zinc-400">Important — please read carefully. Last updated: April 2026.</p>
+      <p className="text-[var(--text-secondary)]">
+        Important — please read carefully. Last updated: April 2026.
+      </p>
 
       <h2>1. State-dependent laws</h2>
       <p>

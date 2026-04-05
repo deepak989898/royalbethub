@@ -46,8 +46,8 @@ export function GoRedirect() {
   if (!slug) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
-        <p className="text-zinc-400">Invalid partner link.</p>
-        <Link href="/" className="mt-4 text-amber-400 hover:underline">
+        <p className="text-[var(--text-secondary)]">Invalid partner link.</p>
+        <Link href="/" className="mt-4 text-amber-600 hover:underline dark:text-amber-400">
           Back home
         </Link>
       </div>
@@ -57,8 +57,8 @@ export function GoRedirect() {
   if (!isFirebaseConfigured()) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
-        <p className="text-zinc-400">Configure Firebase in .env.local to enable redirects.</p>
-        <Link href="/" className="mt-4 text-amber-400 hover:underline">
+        <p className="text-[var(--text-secondary)]">Configure Firebase in .env.local to enable redirects.</p>
+        <Link href="/" className="mt-4 text-amber-600 hover:underline dark:text-amber-400">
           Back home
         </Link>
       </div>
@@ -67,10 +67,10 @@ export function GoRedirect() {
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4 text-center">
-      <Loader2 className="h-10 w-10 animate-spin text-amber-400" aria-hidden />
-      <p className="text-zinc-300">{message}</p>
+      <Loader2 className="h-10 w-10 animate-spin text-amber-600 dark:text-amber-400" aria-hidden />
+      <p className="text-[var(--text-primary)]">{message}</p>
       {message !== "Checking partner link…" ? (
-        <Link href="/" className="text-sm text-amber-400 hover:underline">
+        <Link href="/" className="text-sm text-amber-600 hover:underline dark:text-amber-400">
           Return to Royal Bet Hub
         </Link>
       ) : null}

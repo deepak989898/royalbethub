@@ -8,32 +8,32 @@ type Props = { site: CasinoSite };
 
 export function CasinoCard({ site }: Props) {
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-transparent p-6 shadow-xl shadow-black/40 transition hover:border-amber-500/30 hover:shadow-amber-900/20">
+    <article className="group relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-6 shadow-sm transition hover:border-amber-500/40 hover:shadow-md dark:shadow-xl dark:shadow-black/40 dark:hover:border-amber-500/30 dark:hover:shadow-amber-900/20">
       {site.badge ? (
-        <span className="absolute right-4 top-4 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+        <span className="absolute right-4 top-4 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
           {site.badge}
         </span>
       ) : null}
       <div className="mb-4 flex items-start justify-between gap-3 pr-16">
         <div>
-          <h3 className="text-xl font-semibold text-white">{site.name}</h3>
-          <p className="mt-1 text-sm text-amber-200/80">{site.tagline}</p>
+          <h3 className="text-xl font-semibold text-[var(--text-primary)]">{site.name}</h3>
+          <p className="mt-1 text-sm text-amber-700 dark:text-amber-200/80">{site.tagline}</p>
         </div>
         <div
-          className="flex shrink-0 items-center gap-0.5 rounded-lg bg-black/40 px-2 py-1 text-amber-400"
+          className="flex shrink-0 items-center gap-0.5 rounded-lg bg-[var(--surface-muted)] px-2 py-1 text-amber-600 dark:bg-black/40 dark:text-amber-400"
           title="Editorial rating"
         >
           <Star className="h-4 w-4 fill-current" aria-hidden />
           <span className="text-sm font-semibold tabular-nums">{site.rating.toFixed(1)}</span>
         </div>
       </div>
-      <p className="text-sm leading-relaxed text-zinc-400">{site.description}</p>
+      <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{site.description}</p>
       {site.promoCode ? (
-        <p className="mt-3 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
+        <p className="mt-3 rounded-lg border border-dashed border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200/90">
           Promo: <strong className="font-mono">{site.promoCode}</strong> (verify on cashier)
         </p>
       ) : null}
-      <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+      <ul className="mt-4 space-y-2 text-sm text-[var(--text-primary)] dark:text-zinc-300">
         {site.pros.map((p) => (
           <li key={p} className="flex gap-2">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
@@ -53,7 +53,7 @@ export function CasinoCard({ site }: Props) {
         </Link>
         <Link
           href={`/reviews/${site.slug}`}
-          className="text-sm font-medium text-amber-400/90 underline-offset-2 hover:underline"
+          className="text-sm font-medium text-amber-700 underline-offset-2 hover:underline dark:text-amber-400/90"
         >
           Full review
         </Link>

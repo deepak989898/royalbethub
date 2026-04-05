@@ -37,6 +37,8 @@ export type BonusLead = {
   name: string;
   email: string;
   phone: string;
+  siteSlug?: string;
+  siteName?: string;
   createdAt: Timestamp;
   notes?: string;
 };

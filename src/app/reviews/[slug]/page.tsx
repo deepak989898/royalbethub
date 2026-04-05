@@ -5,7 +5,7 @@ export default function ReviewPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[40vh] items-center justify-center text-zinc-400">
+        <div className="flex min-h-[40vh] items-center justify-center text-[var(--text-secondary)]">
           Loading review…
         </div>
       }

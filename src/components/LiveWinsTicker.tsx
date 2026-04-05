@@ -21,11 +21,11 @@ export function LiveWinsTicker() {
   }, []);
 
   return (
-    <div className="flex items-center gap-3 overflow-hidden rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-300">
-      <Sparkles className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+    <div className="flex items-center gap-3 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-secondary)] shadow-sm dark:bg-black/30 dark:shadow-none">
+      <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
       <p className="min-w-0 truncate">
-        <span className="text-amber-200/90">Live activity (demo):</span>{" "}
-        <span key={i} className="inline-block animate-pulse">
+        <span className="text-amber-700 dark:text-amber-200/90">Live activity (demo):</span>{" "}
+        <span key={i} className="inline-block animate-pulse text-[var(--text-primary)]">
           {LINES[i]}
         </span>
       </p>

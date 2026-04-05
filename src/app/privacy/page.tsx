@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalProse>
-      <h1 className="text-3xl font-bold text-white">Privacy Policy</h1>
-      <p className="text-zinc-400">Last updated: April 2026</p>
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">Privacy Policy</h1>
+      <p className="text-[var(--text-secondary)]">Last updated: April 2026</p>
       <h2>Who we are</h2>
       <p>
         RoyalBetHub operates this website as an affiliate comparison hub. Contact paths are

@@ -398,9 +398,10 @@ export function AdminDashboard() {
         <section>
           <h2 className="text-lg font-semibold text-white">Bonus lead submissions</h2>
           <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full min-w-[480px] text-left text-sm">
+            <table className="w-full min-w-[560px] text-left text-sm">
               <thead className="border-b border-white/10 bg-black/20 text-zinc-500">
                 <tr>
+                  <th className="px-4 py-3">Partner</th>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
@@ -410,13 +411,25 @@ export function AdminDashboard() {
               <tbody>
                 {leads.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-zinc-500">
+                    <td colSpan={5} className="px-4 py-6 text-zinc-500">
                       No leads yet.
                     </td>
                   </tr>
                 ) : (
                   leads.map((l) => (
                     <tr key={l.id} className="border-b border-white/5">
+                      <td className="px-4 py-3 text-xs text-amber-200/90">
+                        {l.siteName ? (
+                          <>
+                            {l.siteName}
+                            {l.siteSlug ? (
+                              <span className="mt-0.5 block font-mono text-zinc-500">{l.siteSlug}</span>
+                            ) : null}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td className="px-4 py-3">{l.name}</td>
                       <td className="px-4 py-3">{l.email}</td>
                       <td className="px-4 py-3">{l.phone}</td>

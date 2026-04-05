@@ -18,35 +18,37 @@ export default function BonusOffersPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
           <Gift className="h-7 w-7" aria-hidden />
         </span>
         <div>
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">Bonus offers hub</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] sm:text-4xl">
+            Bonus offers hub
+          </h1>
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">
             Welcome packs, reload promos, and no-deposit style credits when operators run them.
           </p>
         </div>
       </div>
 
-      <section className="mt-10 space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm leading-relaxed text-zinc-300">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <Sparkles className="h-5 w-5 text-amber-400" aria-hidden />
+      <section className="mt-10 space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-6 text-sm leading-relaxed text-[var(--text-secondary)] shadow-sm dark:shadow-none">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
+          <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
           How to read bonuses
         </h2>
         <p>
-          <strong className="text-zinc-100">Welcome offers</strong> usually match a percentage of
-          your first deposit up to a cap. Wagering (rollover), game weighting, and time limits
-          decide real value—always read the operator T&amp;Cs.
+          <strong className="text-[var(--text-primary)]">Welcome offers</strong> usually match a
+          percentage of your first deposit up to a cap. Wagering (rollover), game weighting, and
+          time limits decide real value—always read the operator T&amp;Cs.
         </p>
         <p>
-          <strong className="text-zinc-100">No-deposit bonuses</strong> appear rarely and often
-          carry strict verification or win caps. We list them when partners provide stable public
-          wording; availability changes by region and compliance.
+          <strong className="text-[var(--text-primary)]">No-deposit bonuses</strong> appear rarely
+          and often carry strict verification or win caps. We list them when partners provide stable
+          public wording; availability changes by region and compliance.
         </p>
         <p>
           Browse live partner cards on the{" "}
-          <Link href="/#compare" className="text-amber-400 hover:underline">
+          <Link href="/#compare" className="text-amber-600 hover:underline dark:text-amber-400">
             homepage listings
           </Link>{" "}
           — promo codes appear on cards when configured in admin.
@@ -54,10 +56,12 @@ export default function BonusOffersPage() {
       </section>
 
       <section className="mt-12">
-        <h2 className="text-center text-xl font-semibold text-white">Hub-exclusive 50% uplift</h2>
-        <p className="mt-2 text-center text-sm text-zinc-500">
-          Submit your details after using our partner links; see form disclaimer for timing and
-          eligibility.
+        <h2 className="text-center text-xl font-semibold text-[var(--text-primary)]">
+          Hub-exclusive 50% uplift
+        </h2>
+        <p className="mt-2 text-center text-sm text-[var(--text-tertiary)]">
+          Select your partner in the form, submit details after using our links; see disclaimer for
+          timing and eligibility.
         </p>
         <div className="mt-8">
           <BonusLeadForm />

@@ -17,12 +17,12 @@ const EXAMPLES = [
 
 export function WithdrawalProofSection() {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
-      <div className="flex items-center gap-2 text-white">
-        <BadgeCheck className="h-6 w-6 text-emerald-400" aria-hidden />
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-6 sm:p-8 dark:bg-white/[0.03]">
+      <div className="flex items-center gap-2 text-[var(--text-primary)]">
+        <BadgeCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" aria-hidden />
         <h2 className="text-xl font-semibold">Withdrawal transparency (trust)</h2>
       </div>
-      <p className="mt-3 text-sm text-zinc-400">
+      <p className="mt-3 text-sm text-[var(--text-secondary)]">
         We don&apos;t publish private user receipts. Below is educational guidance on what healthy
         operators communicate. Always screenshot your own confirmations for disputes.
       </p>
@@ -30,10 +30,10 @@ export function WithdrawalProofSection() {
         {EXAMPLES.map((x) => (
           <li
             key={x.title}
-            className="rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-sm text-zinc-300"
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-secondary)] dark:bg-black/20"
           >
-            <strong className="text-zinc-100">{x.title}</strong>
-            <span className="mt-1 block text-zinc-500">{x.detail}</span>
+            <strong className="text-[var(--text-primary)]">{x.title}</strong>
+            <span className="mt-1 block text-[var(--text-tertiary)]">{x.detail}</span>
           </li>
         ))}
       </ul>

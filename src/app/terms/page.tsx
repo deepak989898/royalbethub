@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <LegalProse>
-      <h1 className="text-3xl font-bold text-white">Terms &amp; Conditions</h1>
-      <p className="text-zinc-400">Last updated: April 2026</p>
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">Terms &amp; Conditions</h1>
+      <p className="text-[var(--text-secondary)]">Last updated: April 2026</p>
       <h2>1. Agreement</h2>
       <p>
         By accessing RoyalBetHub you agree to these Terms. If you disagree, do not use the site.

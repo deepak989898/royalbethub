@@ -31,21 +31,21 @@ export function LimitedBonusCountdown() {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-red-900/20 px-5 py-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+    <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 to-red-600/10 px-5 py-4 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-red-900/20 sm:flex sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/25 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
           <Timer className="h-5 w-5" aria-hidden />
         </span>
         <div>
-          <p className="font-semibold text-white">Limited bonus window</p>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="font-semibold text-[var(--text-primary)]">Limited bonus window</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Use partner links today and stack welcome offers where eligible. Timers are illustrative;
             operator rules always apply.
           </p>
         </div>
       </div>
       <div
-        className="mt-4 flex justify-center gap-3 font-mono text-xl font-bold tabular-nums text-amber-300 sm:mt-0"
+        className="mt-4 flex justify-center gap-3 font-mono text-xl font-bold tabular-nums text-amber-700 dark:text-amber-300 sm:mt-0"
         aria-live="polite"
       >
         <span>{pad(left.h)}h</span>

@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export default function DisclaimerPage() {
   return (
     <LegalProse>
-      <h1 className="text-3xl font-bold text-white">Disclaimer</h1>
-      <p className="text-zinc-400">Last updated: April 2026</p>
+      <h1 className="text-3xl font-bold text-[var(--text-primary)]">Disclaimer</h1>
+      <p className="text-[var(--text-secondary)]">Last updated: April 2026</p>
       <p>
         RoyalBetHub (“we”, “us”) is an <strong>independent affiliate information website</strong>.
         We do not operate gambling services, accept bets, or hold player funds.

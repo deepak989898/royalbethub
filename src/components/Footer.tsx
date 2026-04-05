@@ -14,21 +14,23 @@ const MORE = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-white/10 bg-[#08060c] py-10 text-sm text-zinc-500">
+    <footer className="mt-auto border-t border-[var(--border)] bg-[var(--footer-bg)] py-10 text-sm text-[var(--text-secondary)]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <p className="max-w-3xl leading-relaxed text-zinc-400">
-          <strong className="text-zinc-300">18+ only.</strong> Gambling can be addictive. Play
-          responsibly. RoyalBetHub compares operator offers and may earn a commission when you sign
-          up through our links. Offers, terms, and availability vary by region and operator—always
-          read the site&apos;s terms before depositing.
+        <p className="max-w-3xl leading-relaxed text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">18+ only.</strong> Gambling can be addictive.
+          Play responsibly. RoyalBetHub compares operator offers and may earn a commission when you
+          sign up through our links. Offers, terms, and availability vary by region and
+          operator—always read the site&apos;s terms before depositing.
         </p>
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">Legal</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              Legal
+            </p>
             <ul className="mt-3 flex flex-col gap-2">
               {LEGAL.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-zinc-400 hover:text-amber-400">
+                  <Link href={l.href} className="hover:text-amber-600 dark:hover:text-amber-400">
                     {l.label}
                   </Link>
                 </li>
@@ -36,24 +38,26 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">Explore</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              Explore
+            </p>
             <ul className="mt-3 flex flex-col gap-2">
               {MORE.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-zinc-400 hover:text-amber-400">
+                  <Link href={l.href} className="hover:text-amber-600 dark:hover:text-amber-400">
                     {l.label}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link href="/admin/login" className="text-zinc-400 hover:text-amber-400">
+                <Link href="/admin/login" className="hover:text-amber-600 dark:hover:text-amber-400">
                   Admin login
                 </Link>
               </li>
             </ul>
           </div>
         </div>
-        <p className="mt-10 text-xs text-zinc-600">
+        <p className="mt-10 text-xs text-[var(--text-tertiary)]">
           © {new Date().getFullYear()} RoyalBetHub. Independent affiliate hub. Not a gambling
           operator.
         </p>

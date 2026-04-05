@@ -4,6 +4,7 @@ export type BetType =
   | "straight"
   | "split"
   | "corner"
+  | "street"
   | "column"
   | "dozen"
   | "red"
@@ -53,6 +54,8 @@ export function clientBetKey(
       return `split-${selectionStr}`;
     case "corner":
       return `corner-${selectionStr}`;
+    case "street":
+      return `street-${selectionStr}`;
     case "column":
       return `col-${selection}`;
     case "dozen":
@@ -75,6 +78,8 @@ export function formatBetLabel(p: {
       return `split ${p.selectionStr ?? ""}`;
     case "corner":
       return `corner ${p.selectionStr ?? ""}`;
+    case "street":
+      return `street ${p.selectionStr ?? ""}`;
     case "column":
       return `column ${p.selection} (2:1)`;
     case "dozen":

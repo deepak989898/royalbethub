@@ -11,7 +11,11 @@ import {
   validateColumnDozenSelection,
   validateStraightSelection,
 } from "@/lib/roulette/engine";
-import { isValidCornerKey, isValidSplitKey } from "@/lib/roulette/table-layout";
+import {
+  isValidCornerKey,
+  isValidSplitKey,
+  isValidStreetKey,
+} from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
 import { BET_STEP, isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
@@ -21,6 +25,7 @@ const ALLOWED_TYPES: BetType[] = [
   "straight",
   "split",
   "corner",
+  "street",
   "column",
   "dozen",
   "red",
@@ -75,15 +80,21 @@ export async function POST(request: Request) {
           throw new ApiError(400, "Invalid corner bet");
         }
       }
+      if (b.type === "street") {
+        const s = typeof b.selectionStr === "string" ? b.selectionStr.trim() : "";
+        if (!isValidStreetKey(s)) {
+          throw new ApiError(400, "Invalid street bet");
+        }
+      }
       if (b.type === "column" && !validateColumnDozenSelection(b.selection)) {
         throw new ApiError(400, "Column bet needs selection 1, 2, or 3");
       }
       if (b.type === "dozen" && !validateColumnDozenSelection(b.selection)) {
         throw new ApiError(400, "Dozen bet needs selection 1, 2, or 3");
       }
-      if (b.type === "split" || b.type === "corner") {
+      if (b.type === "split" || b.type === "corner" || b.type === "street") {
         if (b.selection != null) {
-          throw new ApiError(400, "Split/corner bets use selectionStr only");
+          throw new ApiError(400, "Split/corner/street bets use selectionStr only");
         }
       }
       if ((b.type === "column" || b.type === "dozen") && b.selectionStr != null) {
@@ -130,7 +141,7 @@ export async function POST(request: Request) {
             ? b.selection
             : null;
         const selectionStr =
-          b.type === "split" || b.type === "corner"
+          b.type === "split" || b.type === "corner" || b.type === "street"
             ? String(b.selectionStr).trim()
             : null;
         tx.set(betRef, {

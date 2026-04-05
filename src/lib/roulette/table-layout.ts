@@ -72,6 +72,22 @@ export function isValidCornerKey(key: string): boolean {
   return false;
 }
 
+/** One vertical street: three numbers in grid column c (bottom→top 1-2-3 pattern). */
+export function streetKeyFromCol(c: number): string | null {
+  if (c < 0 || c > 11) return null;
+  const a = rcToNum(2, c);
+  const b = rcToNum(1, c);
+  const d = rcToNum(0, c);
+  return [a, b, d].sort((p, q) => p - q).join("-");
+}
+
+export function isValidStreetKey(key: string): boolean {
+  for (let c = 0; c < 12; c++) {
+    if (streetKeyFromCol(c) === key) return true;
+  }
+  return false;
+}
+
 /** Column 1: 1,4,7,… — 2: 2,5,8,… — 3: 3,6,9,… (0 loses). */
 export function columnIndex(n: number): 1 | 2 | 3 | null {
   if (n === 0) return null;

@@ -50,9 +50,6 @@ export function RouletteWheel({
 
   return (
     <div className="relative mx-auto flex w-full max-w-[min(100%,380px)] flex-col items-center">
-      <p className="mb-1 text-center text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-        Wheel ↺ · ball ↻
-      </p>
       <div className="relative aspect-square w-full max-w-[340px]">
         <div className="absolute inset-0 rounded-full border-4 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)]" />
 

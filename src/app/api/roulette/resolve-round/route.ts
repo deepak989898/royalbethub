@@ -122,7 +122,7 @@ export async function POST() {
       }
 
       const prev = st.recentResults ?? [];
-      const recent = [winning, ...prev].slice(0, 14);
+      const recent = [winning, ...prev].slice(0, 15);
       const prevProfit = Number(st.totalHouseProfit) || 0;
 
       tx.update(stateRef, {

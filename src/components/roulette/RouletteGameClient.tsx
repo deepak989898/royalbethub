@@ -83,6 +83,8 @@ export function RouletteGameClient() {
   const openNextInFlightRef = useRef(false);
   const gameRef = useRef<GameState | null>(null);
   gameRef.current = game;
+  /** Wallet after stakes for this round; payouts are hidden until the ball animation finishes. */
+  const balanceAtLastBettingRef = useRef<number | null>(null);
   const { playSpin, playWin, playChip } = useRouletteSounds();
 
   useEffect(() => {
@@ -185,6 +187,12 @@ export function RouletteGameClient() {
     });
     return () => unsub();
   }, [user]);
+
+  useEffect(() => {
+    if (game?.phase === "betting" && balance != null) {
+      balanceAtLastBettingRef.current = balance;
+    }
+  }, [game?.phase, balance]);
 
   useEffect(() => {
     if (!game) return;
@@ -342,7 +350,8 @@ export function RouletteGameClient() {
         type: b.type,
         selection:
           b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
-        selectionStr: b.type === "split" || b.type === "corner" ? b.selectionStr : undefined,
+        selectionStr:
+          b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
         amount: b.amount,
       });
     }
@@ -372,6 +381,17 @@ export function RouletteGameClient() {
     return game.recentResults;
   }, [game?.recentResults, game?.phase, spinComplete]);
 
+  const displayBalance = useMemo(() => {
+    if (
+      game?.phase === "result" &&
+      !spinComplete &&
+      balanceAtLastBettingRef.current != null
+    ) {
+      return balanceAtLastBettingRef.current;
+    }
+    return balance;
+  }, [game?.phase, spinComplete, balance]);
+
   const totalStaged = useMemo(() => {
     let s = 0;
     staged.forEach((v) => {
@@ -395,7 +415,8 @@ export function RouletteGameClient() {
           type: p.type,
           selection:
             p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
-          selectionStr: p.type === "split" || p.type === "corner" ? p.selectionStr : undefined,
+          selectionStr:
+            p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
           amount: add,
         },
       ]);
@@ -406,7 +427,8 @@ export function RouletteGameClient() {
           type: p.type,
           selection:
             p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
-          selectionStr: p.type === "split" || p.type === "corner" ? p.selectionStr : undefined,
+          selectionStr:
+            p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
           amount: (cur?.amount || 0) + add,
         });
         return next;
@@ -423,7 +445,8 @@ export function RouletteGameClient() {
       type: b.type,
       selection:
         b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
-      selectionStr: b.type === "split" || b.type === "corner" ? b.selectionStr : undefined,
+      selectionStr:
+        b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
       amount: b.amount,
     }));
     for (const b of bets) {
@@ -516,7 +539,7 @@ export function RouletteGameClient() {
             <div>
               <p className="text-xs uppercase tracking-wider text-zinc-500">Balance</p>
               <p className="text-2xl font-bold text-amber-400">
-                {balance != null ? `₹${balance.toLocaleString("en-IN")}` : "—"}
+                {displayBalance != null ? `₹${displayBalance.toLocaleString("en-IN")}` : "—"}
               </p>
             </div>
             <div className="text-right">
@@ -540,7 +563,7 @@ export function RouletteGameClient() {
             <div className="rounded-xl border border-zinc-800 bg-black/40 px-3 py-2">
               <p className="mb-2 text-xs uppercase tracking-wider text-zinc-500">Recent numbers</p>
               <div className="flex flex-wrap gap-1">
-                {displayedRecents.slice(0, 12).map((n, i) => (
+                {displayedRecents.slice(0, 15).map((n, i) => (
                   <span
                     key={`${n}-${i}`}
                     className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 px-2 text-xs font-bold text-zinc-200"

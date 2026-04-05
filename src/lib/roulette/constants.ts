@@ -39,3 +39,8 @@ export function cornerMultiplier(): number {
 export function columnDozenMultiplier(): number {
   return 2;
 }
+
+/** Street 11:1 → return ×12. */
+export function streetMultiplier(): number {
+  return 11;
+}

@@ -7,12 +7,14 @@ import {
   isRed,
   splitMultiplier,
   straightMultiplier,
+  streetMultiplier,
 } from "./constants";
 import {
   columnIndex,
   dozenIndex,
   isValidCornerKey,
   isValidSplitKey,
+  isValidStreetKey,
   normalizeSplitKey,
   parseSplitKey,
 } from "./table-layout";
@@ -47,6 +49,12 @@ export function payoutForBet(result: number, bet: BetForEngine): number {
       if (!key || !isValidCornerKey(key)) return 0;
       const nums = key.split("-").map((s) => parseInt(s, 10));
       return nums.includes(result) ? stake * (1 + cornerMultiplier()) : 0;
+    }
+    case "street": {
+      const key = bet.selectionStr;
+      if (!key || !isValidStreetKey(key)) return 0;
+      const nums = key.split("-").map((s) => parseInt(s, 10));
+      return nums.includes(result) ? stake * (1 + streetMultiplier()) : 0;
     }
     case "column": {
       const col = bet.selection;

@@ -82,8 +82,8 @@ export function RouletteWheel({
   }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[min(100%,220px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
-      <div className="mb-0.5 flex min-h-[2.25rem] w-full flex-col items-center justify-center sm:min-h-[2.75rem] md:min-h-[3rem]">
+    <div className="relative mx-auto flex w-full max-w-[min(100%,300px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
+      <div className="mb-0.5 flex min-h-[2.75rem] w-full flex-col items-center justify-center md:min-h-[3rem]">
         <AnimatePresence>
           {showWinOverlay && winningNumber != null ? (
             <motion.span
@@ -92,7 +92,7 @@ export function RouletteWheel({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: -8 }}
               transition={{ type: "spring", stiffness: 280, damping: 22 }}
-              className={`text-3xl font-black tabular-nums tracking-tight sm:text-4xl md:text-5xl lg:text-6xl ${
+              className={`text-4xl font-black tabular-nums tracking-tight max-sm:text-[2.75rem] sm:text-4xl md:text-5xl lg:text-6xl ${
                 colorOf(winningNumber) === "red"
                   ? "text-red-400 drop-shadow-[0_0_24px_rgba(248,113,113,0.45)]"
                   : colorOf(winningNumber) === "black"
@@ -117,7 +117,7 @@ export function RouletteWheel({
         </AnimatePresence>
       </div>
 
-      <div className="relative aspect-square w-full max-w-[210px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px]">
+      <div className="relative aspect-square w-full max-w-[min(100%,286px)] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px]">
         <div className="absolute inset-0 rounded-full border-2 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)] lg:border-4" />
 
         <motion.div
@@ -157,7 +157,7 @@ export function RouletteWheel({
                     x={tx}
                     y={ty}
                     fill="#fafafa"
-                    fontSize={num >= 10 ? 9 : 10}
+                    fontSize={num >= 10 ? 11 : 12}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     className="font-bold"
@@ -183,11 +183,7 @@ export function RouletteWheel({
         <div className="pointer-events-none absolute inset-[4px] z-[15] flex items-center justify-center">
           <motion.div className="absolute inset-0" style={{ rotate: ballAngle }}>
             <div
-              className="absolute left-1/2 top-[3.5%] z-10 -translate-x-1/2"
-              style={{
-                width: "clamp(10px, 3.2vw, 14px)",
-                height: "clamp(10px, 3.2vw, 14px)",
-              }}
+              className="absolute left-1/2 top-[3.5%] z-10 h-[clamp(13px,5vw,16px)] w-[clamp(13px,5vw,16px)] -translate-x-1/2 sm:h-[clamp(10px,3.2vw,14px)] sm:w-[clamp(10px,3.2vw,14px)]"
             >
               <div
                 className="h-full w-full rounded-full border border-white/90 bg-gradient-to-br from-white via-zinc-100 to-zinc-400 shadow-[0_0_14px_rgba(255,255,255,0.85),inset_0_1px_2px_rgba(255,255,255,0.9)]"

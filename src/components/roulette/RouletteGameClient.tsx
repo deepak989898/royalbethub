@@ -16,7 +16,6 @@ import { SPIN_ANIMATION_MS } from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
 import {
   clientBetKey,
-  formatBetLabel,
   isValidBetStake,
   MAX_BET_AMOUNT,
   MIN_BET_AMOUNT,
@@ -404,20 +403,6 @@ export function RouletteGameClient() {
 
   const stagedBetRows = useMemo(() => [...staged.values()], [staged]);
 
-  const stagedLinesSorted = useMemo(() => {
-    return [...staged.entries()]
-      .map(([key, v]) => ({
-        key,
-        label: formatBetLabel({
-          type: v.type,
-          selection: v.selection ?? null,
-          selectionStr: v.selectionStr ?? null,
-        }),
-        amount: v.amount,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label) || b.amount - a.amount);
-  }, [staged]);
-
   const displayedRecents = useMemo(() => {
     if (!game || game.recentResults.length === 0) return [];
     if (game.phase === "betting") return game.recentResults;
@@ -739,29 +724,6 @@ export function RouletteGameClient() {
               maxHint={stakeMaxHint}
               disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
             />
-            {stagedLinesSorted.length > 0 ? (
-              <div className="rounded-lg border border-amber-900/45 bg-black/40 px-2 py-1.5 sm:rounded-xl sm:px-3 sm:py-2">
-                <p className="text-[9px] font-semibold uppercase tracking-wide text-amber-200/90 lg:text-[10px]">
-                  Your staged bets
-                </p>
-                <ul className="mt-1 max-h-36 space-y-0.5 overflow-y-auto text-[10px] sm:max-h-44 sm:text-[11px] lg:max-h-56 lg:text-xs">
-                  {stagedLinesSorted.map((row) => (
-                    <li
-                      key={row.key}
-                      className="flex justify-between gap-2 border-b border-zinc-800/70 py-0.5 last:border-0"
-                    >
-                      <span className="min-w-0 flex-1 leading-snug text-zinc-300">{row.label}</span>
-                      <span className="shrink-0 font-mono font-semibold tabular-nums text-amber-300">
-                        ₹{row.amount.toLocaleString("en-IN")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-1 border-t border-zinc-800/80 pt-1 text-[10px] font-medium tabular-nums text-amber-400 sm:text-xs">
-                  Total ₹{totalStaged.toLocaleString("en-IN")}
-                </p>
-              </div>
-            ) : null}
           </div>
 
           <div className="order-3 flex flex-wrap gap-1 sm:gap-1.5 lg:gap-2">

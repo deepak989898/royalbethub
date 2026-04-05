@@ -3,6 +3,7 @@
 import { motion, useMotionValue, animate } from "framer-motion";
 import { useEffect, useLayoutEffect } from "react";
 import { colorOf } from "@/lib/roulette/constants";
+import { SPIN_ANIMATION_MS } from "@/lib/roulette/table-layout";
 import {
   EUROPEAN_WHEEL_ORDER,
   ballArmTargetWorldDegrees,
@@ -39,7 +40,7 @@ export function RouletteWheel({
   useEffect(() => {
     if (spinTrigger === 0 || winningNumber == null) return;
     const ease = [0.15, 0.75, 0.1, 1] as const;
-    const duration = 5.4;
+    const duration = SPIN_ANIMATION_MS / 1000;
     const wheelCurrent = wheelRotation.get();
     const wheelTarget = wheelSpinTargetDegrees(6.5, wheelCurrent);
     const ballCurrent = ballAngle.get();
@@ -133,26 +134,29 @@ export function RouletteWheel({
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
       </div>
 
-      {phase === "result" && winningNumber != null && highlightWinner ? (
-        <p className="mt-4 text-center text-sm text-zinc-400">
-          Result:{" "}
-          <span
-            className={`text-lg font-bold ${
+      <div className="mt-4 flex min-h-[4.5rem] flex-col items-center justify-center">
+        {phase === "result" && winningNumber != null && highlightWinner ? (
+          <motion.span
+            key={winningNumber}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className={`text-5xl font-black tabular-nums tracking-tight sm:text-6xl ${
               colorOf(winningNumber) === "red"
-                ? "text-red-400"
+                ? "text-red-400 drop-shadow-[0_0_24px_rgba(248,113,113,0.45)]"
                 : colorOf(winningNumber) === "black"
-                  ? "text-zinc-200"
-                  : "text-emerald-400"
+                  ? "text-zinc-100 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                  : "text-emerald-400 drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]"
             }`}
           >
             {winningNumber}
+          </motion.span>
+        ) : phase === "result" ? (
+          <span className="text-sm text-zinc-500" aria-hidden>
+            …
           </span>
-        </p>
-      ) : phase === "result" ? (
-        <p className="mt-4 text-center text-sm text-zinc-500">Spinning…</p>
-      ) : (
-        <p className="mt-4 text-center text-sm text-zinc-500">Place your bets — round is live</p>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }

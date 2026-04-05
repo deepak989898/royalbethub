@@ -104,4 +104,5 @@ export function dozenIndex(n: number): 1 | 2 | 3 | null {
   return 3;
 }
 
-export const SPIN_ANIMATION_MS = 5400;
+/** Must match wheel/ball Framer Motion duration in `RouletteWheel`. */
+export const SPIN_ANIMATION_MS = 7400;

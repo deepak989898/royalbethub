@@ -25,7 +25,7 @@ export async function POST() {
         throw new ApiError(409, "Result still showing");
       }
 
-      const dur = Math.max(5, Math.min(120, Number(st.spinDurationSec) || 15));
+      const dur = Math.max(5, Math.min(120, Number(st.spinDurationSec) || 30));
       const newRoundId = crypto.randomUUID();
       const endsAt = admin.firestore.Timestamp.fromMillis(Date.now() + dur * 1000);
 

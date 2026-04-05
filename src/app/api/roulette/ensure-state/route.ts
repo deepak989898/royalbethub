@@ -13,7 +13,7 @@ export async function POST() {
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (!snap.exists) {
-        tx.set(ref, defaultRouletteState(15));
+        tx.set(ref, defaultRouletteState(30));
       }
     });
     return jsonOk({ ok: true });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
@@ -20,6 +21,7 @@ import {
   MIN_BET_AMOUNT,
 } from "@/lib/roulette/types";
 import { roulettePost } from "@/lib/roulette/client-api";
+import { payoutForBet } from "@/lib/roulette/payout";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import { BetAmountControl } from "./BetAmountControl";
 import { BettingTable, type TableBetPayload } from "./BettingTable";
@@ -85,6 +87,7 @@ export function RouletteGameClient() {
   gameRef.current = game;
   /** Wallet after stakes for this round; payouts are hidden until the ball animation finishes. */
   const balanceAtLastBettingRef = useRef<number | null>(null);
+  const winSoundRoundRef = useRef<string | null>(null);
   const { playSpin, playWin, playChip } = useRouletteSounds();
 
   useEffect(() => {
@@ -135,7 +138,7 @@ export function RouletteGameClient() {
         endsAt: d.endsAt?.toMillis?.() ?? null,
         winningNumber: d.winningNumber != null ? Number(d.winningNumber) : null,
         resultShownUntil: d.resultShownUntil?.toMillis?.() ?? null,
-        spinDurationSec: Number(d.spinDurationSec) || 15,
+        spinDurationSec: Number(d.spinDurationSec) || 30,
         recentResults: Array.isArray(d.recentResults) ? d.recentResults.map(Number) : [],
       });
     });
@@ -392,6 +395,37 @@ export function RouletteGameClient() {
     return balance;
   }, [game?.phase, spinComplete, balance]);
 
+  const userRoundWinTotal = useMemo(() => {
+    if (!user || !game || game.phase !== "result" || !spinComplete || game.winningNumber == null) {
+      return 0;
+    }
+    const w = game.winningNumber;
+    let sum = 0;
+    for (const b of liveBets) {
+      if (b.userId !== user.uid) continue;
+      sum += payoutForBet(w, {
+        type: b.type,
+        selection: b.selection ?? undefined,
+        selectionStr: b.selectionStr ?? undefined,
+        amount: b.amount,
+      });
+    }
+    return sum;
+  }, [user, game, spinComplete, liveBets]);
+
+  useEffect(() => {
+    if (game?.phase === "betting") {
+      winSoundRoundRef.current = null;
+    }
+  }, [game?.phase]);
+
+  useEffect(() => {
+    if (!spinComplete || !game || game.phase !== "result" || userRoundWinTotal <= 0) return;
+    if (winSoundRoundRef.current === game.roundId) return;
+    winSoundRoundRef.current = game.roundId;
+    playWin();
+  }, [spinComplete, game?.roundId, game?.phase, userRoundWinTotal, playWin]);
+
   const totalStaged = useMemo(() => {
     let s = 0;
     staged.forEach((v) => {
@@ -559,6 +593,24 @@ export function RouletteGameClient() {
             highlightWinner={game?.phase === "result" && spinComplete}
           />
 
+          {spinComplete && game?.phase === "result" && userRoundWinTotal > 0 ? (
+            <motion.div
+              key={`${game.roundId}-win`}
+              initial={{ opacity: 0, y: 18, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              className="relative overflow-hidden rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-950 via-amber-900/85 to-yellow-950/55 px-6 py-5 text-center shadow-[0_0_36px_rgba(245,158,11,0.22)]"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(250,204,21,0.28),transparent_55%)]" />
+              <p className="relative text-xs font-bold uppercase tracking-[0.32em] text-amber-200/95">
+                Prize won
+              </p>
+              <p className="relative mt-2 text-3xl font-black tabular-nums text-amber-50">
+                ₹{userRoundWinTotal.toLocaleString("en-IN")}
+              </p>
+            </motion.div>
+          ) : null}
+
           {game && displayedRecents.length > 0 ? (
             <div className="rounded-xl border border-zinc-800 bg-black/40 px-3 py-2">
               <p className="mb-2 text-xs uppercase tracking-wider text-zinc-500">Recent numbers</p>
@@ -583,14 +635,11 @@ export function RouletteGameClient() {
             maxHint={balance}
             disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
           />
-          <p className="text-xs text-zinc-500">
-            Tap the table to add ₹{betUnit.toLocaleString("en-IN")} per cell. Confirm with Place bets.
-            {totalStaged > 0 ? (
-              <span className="ml-2 text-amber-400">
-                Staged: ₹{totalStaged.toLocaleString("en-IN")}
-              </span>
-            ) : null}
-          </p>
+          {totalStaged > 0 ? (
+            <p className="text-xs text-amber-400">
+              Staged: ₹{totalStaged.toLocaleString("en-IN")}
+            </p>
+          ) : null}
           <BettingTable
             onBet={onBet}
             disabled={

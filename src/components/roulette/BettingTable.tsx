@@ -117,13 +117,6 @@ export function BettingTable({
 
   return (
     <div className="w-full space-y-2 overflow-x-auto pb-2">
-      <p className="text-[11px] leading-snug text-zinc-500">
-        Inside grid: tap <span className="text-zinc-400">center</span> for a single number;{" "}
-        <span className="text-zinc-400">edges</span> for splits; <span className="text-zinc-400">corners</span> for
-        corners; <span className="text-zinc-400">bottom band</span> on the lowest row for a street (three in column).
-        Zero: right strip for 0–3 / 0–2 / 0–1 splits.
-      </p>
-
       <div className="flex min-w-[320px] gap-1">
         <button
           type="button"

@@ -15,7 +15,7 @@ export interface RouletteStateDoc {
   totalHouseProfit?: number;
 }
 
-export function defaultRouletteState(spinDurationSec = 15): RouletteStateDoc {
+export function defaultRouletteState(spinDurationSec = 30): RouletteStateDoc {
   const now = admin.firestore.Timestamp.now();
   const roundId = crypto.randomUUID();
   const endsAt = admin.firestore.Timestamp.fromMillis(

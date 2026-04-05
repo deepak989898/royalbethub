@@ -57,7 +57,7 @@ export function RouletteAdminPanel() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [withdrawals, setWithdrawals] = useState<WRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [spinDurationSec, setSpinDurationSec] = useState("15");
+  const [spinDurationSec, setSpinDurationSec] = useState("30");
   const [rtpMode, setRtpMode] = useState<"auto" | "manual">("auto");
   const [manualNext, setManualNext] = useState("");
   const [saving, setSaving] = useState(false);
@@ -87,11 +87,11 @@ export function RouletteAdminPanel() {
         winningNumber: d.winningNumber != null ? Number(d.winningNumber) : null,
         rtpMode: String(d.rtpMode || "auto"),
         manualNextNumber: d.manualNextNumber != null ? Number(d.manualNextNumber) : null,
-        spinDurationSec: Number(d.spinDurationSec) || 15,
+        spinDurationSec: Number(d.spinDurationSec) || 30,
         totalHouseProfit: Number(d.totalHouseProfit) || 0,
         recentResults: Array.isArray(d.recentResults) ? d.recentResults.map(Number) : [],
       });
-      setSpinDurationSec(String(Number(d.spinDurationSec) || 15));
+      setSpinDurationSec(String(Number(d.spinDurationSec) || 30));
       setRtpMode(d.rtpMode === "manual" ? "manual" : "auto");
     });
     return () => unsub();

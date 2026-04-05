@@ -53,9 +53,9 @@ export function BetAmountControl({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block min-w-[8rem] flex-1 text-xs uppercase tracking-wider text-zinc-500">
+    <div className="space-y-2 lg:space-y-3">
+      <div className="flex flex-wrap items-end gap-2 lg:gap-3">
+        <label className="block min-w-0 flex-1 text-[10px] uppercase tracking-wider text-zinc-500 lg:min-w-[8rem] lg:text-xs">
           Stake ₹ (×{BET_STEP})
           <input
             type="text"
@@ -67,15 +67,15 @@ export function BetAmountControl({
             onKeyDown={(e) => {
               if (e.key === "Enter") commitFromInput();
             }}
-            className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-white outline-none focus:border-amber-600/50 disabled:opacity-40"
+            className="mt-0.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-amber-600/50 disabled:opacity-40 lg:mt-1 lg:rounded-xl lg:px-3 lg:py-2 lg:text-sm"
           />
         </label>
-        <p className="text-[10px] text-zinc-600">
+        <p className="hidden text-[10px] text-zinc-600 sm:block">
           Min ₹{MIN_BET_AMOUNT}, max ₹{MAX_BET_AMOUNT.toLocaleString("en-IN")}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-zinc-500">Quick:</span>
+      <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
+        <span className="text-[10px] text-zinc-500 lg:text-xs">Quick</span>
         {QUICK_BET_AMOUNTS.map((c) => {
           const active = c === value;
           return (
@@ -88,9 +88,9 @@ export function BetAmountControl({
                 onChange(n);
                 setText(String(n));
               }}
-              className={`h-10 min-w-[2.5rem] rounded-full border-2 px-2 text-xs font-bold transition disabled:opacity-40 ${
+              className={`h-7 min-w-[1.75rem] rounded-md border px-1.5 text-[10px] font-bold transition disabled:opacity-40 lg:h-10 lg:min-w-[2.5rem] lg:rounded-full lg:border-2 lg:px-2 lg:text-xs ${
                 active
-                  ? "border-amber-300 bg-gradient-to-br from-amber-500 to-amber-700 text-black ring-2 ring-amber-400/40"
+                  ? "border-amber-300 bg-gradient-to-br from-amber-500 to-amber-700 text-black ring-1 ring-amber-400/40 lg:ring-2"
                   : "border-zinc-600 bg-zinc-900 text-amber-100 hover:border-amber-600/50"
               }`}
             >

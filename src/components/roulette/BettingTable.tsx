@@ -72,7 +72,7 @@ function NumberCell({
       : "bg-zinc-900 border-zinc-600 text-zinc-100";
 
   return (
-    <div className="relative min-h-[2.35rem] min-w-0 flex-1">
+    <div className="relative min-h-[1.6rem] min-w-0 flex-1 lg:min-h-[2.35rem]">
       <button
         type="button"
         disabled={disabled}
@@ -80,13 +80,15 @@ function NumberCell({
           const { x, y } = normClick(e);
           onBet(resolveNumberCellClick(r, c, x, y));
         }}
-        className={`relative flex h-full min-h-[2.35rem] w-full items-center justify-center rounded border text-xs font-semibold transition ${
+        className={`relative flex h-full min-h-[1.6rem] w-full items-center justify-center rounded border text-[10px] font-semibold transition lg:min-h-[2.35rem] lg:text-xs ${
           disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
-        } ${bg} ${stagedKeys.has(sk) ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black" : ""}`}
+        } ${bg} ${stagedKeys.has(sk) ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
       >
         {n}
         {totals.get(sk) ? (
-          <span className="absolute bottom-0.5 text-[8px] text-amber-300">₹{totals.get(sk)}</span>
+          <span className="absolute bottom-px text-[6px] text-amber-300 lg:bottom-0.5 lg:text-[8px]">
+            ₹{totals.get(sk)}
+          </span>
         ) : null}
       </button>
     </div>
@@ -107,17 +109,17 @@ export function BettingTable({
   const totals = aggregate(liveBets);
 
   function cellClass(base: string, active: boolean) {
-    return `${base} relative flex min-h-[2.25rem] items-center justify-center rounded-md border text-xs font-semibold transition ${
+    return `${base} relative flex min-h-[1.6rem] items-center justify-center rounded border text-[10px] font-semibold transition lg:min-h-[2.25rem] lg:rounded-md lg:text-xs ${
       disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
-    } ${active ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-black" : ""}`;
+    } ${active ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`;
   }
 
   const zeroKey = clientBetKey("straight", 0);
   const colKeys = [3, 2, 1] as const;
 
   return (
-    <div className="w-full space-y-2 overflow-x-auto pb-2">
-      <div className="flex min-w-[320px] gap-1">
+    <div className="w-full space-y-1.5 overflow-x-auto pb-1 lg:space-y-2 lg:pb-2">
+      <div className="flex min-w-[min(100%,260px)] gap-0.5 sm:min-w-[300px] lg:min-w-[320px] lg:gap-1">
         <button
           type="button"
           disabled={disabled}
@@ -126,19 +128,21 @@ export function BettingTable({
             onBet(resolveZeroCellClick(x, y));
           }}
           className={cellClass(
-            "relative flex w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-emerald-700 bg-emerald-800 py-8 text-white",
+            "relative flex w-8 shrink-0 flex-col items-center justify-center rounded-md border border-emerald-700 bg-emerald-800 py-5 text-[11px] text-white lg:w-11 lg:rounded-lg lg:py-8 lg:text-sm",
             stagedKeys.has(zeroKey)
           )}
         >
           0
           {totals.get(zeroKey) ? (
-            <span className="absolute bottom-0.5 text-[9px] text-amber-300">₹{totals.get(zeroKey)}</span>
+            <span className="absolute bottom-0.5 text-[7px] text-amber-300 lg:text-[9px]">
+              ₹{totals.get(zeroKey)}
+            </span>
           ) : null}
         </button>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-px lg:gap-0.5">
           {([0, 1, 2] as const).map((r) => (
-            <div key={r} className="flex gap-0.5">
+            <div key={r} className="flex gap-px lg:gap-0.5">
               {Array.from({ length: 12 }, (_, c) => (
                 <NumberCell
                   key={`${r}-${c}`}
@@ -154,7 +158,7 @@ export function BettingTable({
           ))}
         </div>
 
-        <div className="flex w-9 shrink-0 flex-col justify-stretch gap-0.5">
+        <div className="flex w-6 shrink-0 flex-col justify-stretch gap-px lg:w-9 lg:gap-0.5">
           {colKeys.map((col) => {
             const ck = clientBetKey("column", col);
             return (
@@ -164,13 +168,15 @@ export function BettingTable({
                 disabled={disabled}
                 onClick={() => onBet({ type: "column", selection: col })}
                 className={cellClass(
-                  "flex flex-1 items-center justify-center bg-zinc-800 px-0.5 text-[9px] leading-tight text-zinc-200 border-zinc-600",
+                  "flex flex-1 items-center justify-center bg-zinc-800 px-px text-[7px] leading-tight text-zinc-200 border-zinc-600 lg:px-0.5 lg:text-[9px]",
                   stagedKeys.has(ck)
                 )}
               >
                 2:1
                 {totals.get(ck) ? (
-                  <span className="absolute bottom-0.5 text-[8px] text-amber-300">₹{totals.get(ck)}</span>
+                  <span className="absolute bottom-px text-[6px] text-amber-300 lg:bottom-0.5 lg:text-[8px]">
+                    ₹{totals.get(ck)}
+                  </span>
                 ) : null}
               </button>
             );
@@ -178,7 +184,7 @@ export function BettingTable({
         </div>
       </div>
 
-      <div className="grid min-w-[280px] grid-cols-3 gap-1">
+      <div className="grid min-w-[min(100%,260px)] grid-cols-3 gap-0.5 sm:min-w-[280px] lg:gap-1">
         {(
           [
             [1, "1st 12"],
@@ -194,20 +200,23 @@ export function BettingTable({
               disabled={disabled}
               onClick={() => onBet({ type: "dozen", selection: dz })}
               className={cellClass(
-                "bg-slate-900 px-2 py-2.5 text-slate-100 border-slate-600",
+                "bg-slate-900 px-1 py-1.5 text-[9px] text-slate-100 border-slate-600 lg:px-2 lg:py-2.5 lg:text-xs",
                 stagedKeys.has(dk)
               )}
             >
-              {label}
+              <span className="lg:hidden">{dz === 1 ? "1st" : dz === 2 ? "2nd" : "3rd"}</span>
+              <span className="hidden lg:inline">{label}</span>
               {totals.get(dk) ? (
-                <span className="absolute bottom-1 text-[9px] text-amber-300">₹{totals.get(dk)}</span>
+                <span className="absolute bottom-0.5 text-[7px] text-amber-300 lg:bottom-1 lg:text-[9px]">
+                  ₹{totals.get(dk)}
+                </span>
               ) : null}
             </button>
           );
         })}
       </div>
 
-      <div className="grid min-w-[280px] grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-6">
+      <div className="grid min-w-[min(100%,260px)] grid-cols-3 gap-0.5 sm:min-w-[280px] sm:grid-cols-3 md:grid-cols-6 lg:gap-1">
         {(
           [
             ["red", "Red", "bg-red-900 border-red-700 text-red-100"],
@@ -223,11 +232,13 @@ export function BettingTable({
             type="button"
             disabled={disabled}
             onClick={() => onBet({ type: type as BetType })}
-            className={cellClass(`${cls} px-2 py-3`, stagedKeys.has(type))}
+            className={cellClass(`${cls} px-1 py-2 lg:px-2 lg:py-3`, stagedKeys.has(type))}
           >
-            {label}
+            <span className="max-[400px]:text-[9px]">{label}</span>
             {totals.get(type) ? (
-              <span className="absolute bottom-1 text-[10px] text-amber-300">₹{totals.get(type)}</span>
+              <span className="absolute bottom-0.5 text-[7px] text-amber-300 lg:bottom-1 lg:text-[10px]">
+                ₹{totals.get(type)}
+              </span>
             ) : null}
           </button>
         ))}

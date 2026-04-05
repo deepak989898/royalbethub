@@ -547,14 +547,30 @@ export function RouletteGameClient() {
     return <p className="text-center text-red-400">Your account is blocked from play.</p>;
   }
 
+  const recentsSection = (
+    <div className="rounded-lg border border-zinc-800 bg-black/40 px-2 py-1.5 lg:rounded-xl lg:px-3 lg:py-2">
+      <p className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 lg:mb-2 lg:text-xs">Recent</p>
+      <div className="flex flex-wrap gap-0.5 lg:gap-1">
+        {displayedRecents.slice(0, 15).map((n, i) => (
+          <span
+            key={`${n}-${i}`}
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-zinc-700 bg-zinc-900 px-1 text-[10px] font-bold text-zinc-200 lg:h-8 lg:min-w-8 lg:rounded-md lg:px-2 lg:text-xs"
+          >
+            {n}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 lg:space-y-8">
       {activityToasts.length > 0 ? (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex max-w-[min(90vw,24rem)] -translate-x-1/2 flex-col gap-2">
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex max-w-[min(92vw,22rem)] -translate-x-1/2 flex-col gap-1.5 lg:bottom-6 lg:max-w-[min(90vw,24rem)] lg:gap-2">
           {activityToasts.map((t) => (
             <div
               key={t.id}
-              className="rounded-xl border border-amber-600/40 bg-zinc-950/95 px-4 py-3 text-center text-sm text-amber-100 shadow-lg backdrop-blur-sm"
+              className="rounded-lg border border-amber-600/40 bg-zinc-950/95 px-3 py-2 text-center text-xs text-amber-100 shadow-lg backdrop-blur-sm lg:rounded-xl lg:px-4 lg:py-3 lg:text-sm"
             >
               {t.text}
             </div>
@@ -562,25 +578,25 @@ export function RouletteGameClient() {
         </div>
       ) : null}
       {err ? (
-        <p className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-2 text-sm text-red-300">
+        <p className="rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-1.5 text-xs text-red-300 lg:px-4 lg:py-2 lg:text-sm">
           {err}
         </p>
       ) : null}
 
-      <div className="flex flex-col items-center justify-between gap-6 lg:flex-row lg:items-start">
-        <div className="w-full flex-1 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-900/30 bg-black/50 px-4 py-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-3 lg:gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-900/30 bg-black/50 px-3 py-2 lg:gap-4 lg:px-4 lg:py-3">
             <div>
-              <p className="text-xs uppercase tracking-wider text-zinc-500">Balance</p>
-              <p className="text-2xl font-bold text-amber-400">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
+              <p className="text-lg font-bold tabular-nums text-amber-400 lg:text-2xl">
                 {displayBalance != null ? `₹${displayBalance.toLocaleString("en-IN")}` : "—"}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs uppercase tracking-wider text-zinc-500">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 lg:text-xs">
                 {game?.phase === "betting" ? "Time left" : "Status"}
               </p>
-              <p className="text-2xl font-mono font-bold text-zinc-100">
+              <p className="text-lg font-mono font-bold tabular-nums text-zinc-100 lg:text-2xl">
                 {game?.phase === "betting" ? `${secondsLeft}s` : "Spinning…"}
               </p>
             </div>
@@ -599,56 +615,50 @@ export function RouletteGameClient() {
               initial={{ opacity: 0, y: 18, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className="relative overflow-hidden rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-950 via-amber-900/85 to-yellow-950/55 px-6 py-5 text-center shadow-[0_0_36px_rgba(245,158,11,0.22)]"
+              className="relative overflow-hidden rounded-xl border border-amber-400/50 bg-gradient-to-br from-amber-950 via-amber-900/85 to-yellow-950/55 px-4 py-3 text-center shadow-[0_0_28px_rgba(245,158,11,0.2)] lg:rounded-2xl lg:px-6 lg:py-5 lg:shadow-[0_0_36px_rgba(245,158,11,0.22)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(250,204,21,0.28),transparent_55%)]" />
-              <p className="relative text-xs font-bold uppercase tracking-[0.32em] text-amber-200/95">
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-200/95 lg:text-xs lg:tracking-[0.32em]">
                 Prize won
               </p>
-              <p className="relative mt-2 text-3xl font-black tabular-nums text-amber-50">
+              <p className="relative mt-1 text-2xl font-black tabular-nums text-amber-50 lg:mt-2 lg:text-3xl">
                 ₹{userRoundWinTotal.toLocaleString("en-IN")}
               </p>
             </motion.div>
           ) : null}
 
           {game && displayedRecents.length > 0 ? (
-            <div className="rounded-xl border border-zinc-800 bg-black/40 px-3 py-2">
-              <p className="mb-2 text-xs uppercase tracking-wider text-zinc-500">Recent numbers</p>
-              <div className="flex flex-wrap gap-1">
-                {displayedRecents.slice(0, 15).map((n, i) => (
-                  <span
-                    key={`${n}-${i}`}
-                    className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 px-2 text-xs font-bold text-zinc-200"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <div className="hidden lg:block">{recentsSection}</div>
           ) : null}
         </div>
 
-        <div className="w-full flex-1 space-y-4 lg:max-w-xl">
-          <BetAmountControl
-            value={betUnit}
-            onChange={setBetUnit}
-            maxHint={balance}
-            disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
-          />
-          {totalStaged > 0 ? (
-            <p className="text-xs text-amber-400">
-              Staged: ₹{totalStaged.toLocaleString("en-IN")}
-            </p>
-          ) : null}
-          <BettingTable
-            onBet={onBet}
-            disabled={
-              game?.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt || blocked
-            }
-            liveBets={liveBets}
-            stagedKeys={stagedKeys}
-          />
-          <div className="flex flex-wrap gap-2">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-3 lg:max-w-xl lg:gap-4">
+          <div className="order-1 lg:order-2">
+            <BettingTable
+              onBet={onBet}
+              disabled={
+                game?.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt || blocked
+              }
+              liveBets={liveBets}
+              stagedKeys={stagedKeys}
+            />
+          </div>
+
+          <div className="order-2 space-y-2 lg:order-1 lg:space-y-3">
+            <BetAmountControl
+              value={betUnit}
+              onChange={setBetUnit}
+              maxHint={balance}
+              disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
+            />
+            {totalStaged > 0 ? (
+              <p className="text-[10px] text-amber-400 lg:text-xs">
+                Staged: ₹{totalStaged.toLocaleString("en-IN")}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="order-3 flex flex-wrap gap-1.5 lg:gap-2">
             <button
               type="button"
               disabled={
@@ -658,7 +668,7 @@ export function RouletteGameClient() {
                 Date.now() >= game.endsAt
               }
               onClick={() => undoLastStake()}
-              className="rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+              className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
             >
               Undo
             </button>
@@ -671,7 +681,7 @@ export function RouletteGameClient() {
                 Date.now() >= game.endsAt
               }
               onClick={() => clearStaged()}
-              className="rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+              className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
             >
               Clear
             </button>
@@ -684,11 +694,12 @@ export function RouletteGameClient() {
                 Date.now() >= game.endsAt
               }
               onClick={() => rebet()}
-              className="rounded-xl border border-amber-700/50 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+              className="rounded-lg border border-amber-700/50 px-2.5 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-950/40 disabled:opacity-40 lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
             >
               Rebet
             </button>
           </div>
+
           <button
             type="button"
             disabled={
@@ -699,11 +710,16 @@ export function RouletteGameClient() {
               Date.now() >= game.endsAt
             }
             onClick={() => void placeStaged()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-3 font-bold text-black shadow-lg shadow-amber-900/30 disabled:opacity-40"
+            className="order-4 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 py-2.5 text-sm font-bold text-black shadow-lg shadow-amber-900/30 disabled:opacity-40 lg:rounded-xl lg:py-3 lg:text-base"
           >
-            {placing ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            Place bets
+            {placing ? <Loader2 className="h-4 w-4 animate-spin lg:h-5 lg:w-5" /> : null}
+            <span className="lg:hidden">Place</span>
+            <span className="hidden lg:inline">Place bets</span>
           </button>
+
+          {game && displayedRecents.length > 0 ? (
+            <div className="order-5 lg:hidden">{recentsSection}</div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -50,12 +50,12 @@ export function RouletteWheel({
   }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[min(100%,380px)] flex-col items-center">
-      <div className="relative aspect-square w-full max-w-[340px]">
-        <div className="absolute inset-0 rounded-full border-4 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)]" />
+    <div className="relative mx-auto flex w-full max-w-[min(100%,260px)] flex-col items-center sm:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
+      <div className="relative aspect-square w-full max-w-[240px] sm:max-w-[300px] lg:max-w-[340px]">
+        <div className="absolute inset-0 rounded-full border-2 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)] lg:border-4" />
 
         <motion.div
-          className="absolute inset-[10px] rounded-full"
+          className="absolute inset-[6px] rounded-full lg:inset-[10px]"
           style={{ rotate: wheelRotation }}
         >
           <svg viewBox={`-${r} -${r} ${r * 2} ${r * 2}`} className="h-full w-full">
@@ -91,7 +91,7 @@ export function RouletteWheel({
                     x={tx}
                     y={ty}
                     fill="#fafafa"
-                    fontSize={num >= 10 ? 11 : 12}
+                    fontSize={num >= 10 ? 9 : 10}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     className="font-bold"
@@ -134,14 +134,14 @@ export function RouletteWheel({
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
       </div>
 
-      <div className="mt-4 flex min-h-[4.5rem] flex-col items-center justify-center">
+      <div className="mt-2 flex min-h-[3.25rem] flex-col items-center justify-center sm:mt-4 sm:min-h-[4.5rem]">
         {phase === "result" && winningNumber != null && highlightWinner ? (
           <motion.span
             key={winningNumber}
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className={`text-5xl font-black tabular-nums tracking-tight sm:text-6xl ${
+            className={`text-4xl font-black tabular-nums tracking-tight sm:text-5xl lg:text-6xl ${
               colorOf(winningNumber) === "red"
                 ? "text-red-400 drop-shadow-[0_0_24px_rgba(248,113,113,0.45)]"
                 : colorOf(winningNumber) === "black"

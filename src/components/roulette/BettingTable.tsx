@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useMemo } from "react";
 import { colorOf } from "@/lib/roulette/constants";
 import { resolveNumberCellClick, resolveZeroCellClick } from "@/lib/roulette/grid-click";
 import type { BetType } from "@/lib/roulette/types";
@@ -100,13 +101,28 @@ export function BettingTable({
   disabled,
   liveBets,
   stagedKeys,
+  stagedBets,
 }: {
   onBet: (p: TableBetPayload) => void;
   disabled: boolean;
   liveBets: LiveBet[];
   stagedKeys: Set<string>;
+  /** Not yet placed — merged into per-cell ₹ totals so amounts update as user adds/undoes. */
+  stagedBets: Array<{
+    type: BetType;
+    selection?: number;
+    selectionStr?: string;
+    amount: number;
+  }>;
 }) {
-  const totals = aggregate(liveBets);
+  const totals = useMemo(() => {
+    const m = aggregate(liveBets);
+    for (const s of stagedBets) {
+      const k = clientBetKey(s.type, s.selection, s.selectionStr);
+      m.set(k, (m.get(k) || 0) + s.amount);
+    }
+    return m;
+  }, [liveBets, stagedBets]);
 
   function cellClass(base: string, active: boolean) {
     return `${base} relative flex min-h-[1.45rem] items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.25rem] lg:rounded-md lg:text-xs ${

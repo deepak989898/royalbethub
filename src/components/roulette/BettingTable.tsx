@@ -118,7 +118,7 @@ export function BettingTable({
   const colKeys = [3, 2, 1] as const;
 
   return (
-    <div className="w-full space-y-1 overflow-x-auto pb-0.5 sm:space-y-1.5 sm:pb-1 lg:space-y-2 lg:pb-2">
+    <div className="w-full space-y-0.5 overflow-x-auto pb-0 sm:space-y-1.5 sm:pb-1 lg:space-y-2 lg:pb-2">
       <div className="flex min-w-[min(100%,248px)] gap-px sm:min-w-[260px] sm:gap-0.5 md:min-w-[300px] lg:min-w-[320px] lg:gap-1">
         <button
           type="button"

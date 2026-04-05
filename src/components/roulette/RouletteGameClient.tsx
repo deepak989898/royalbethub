@@ -22,6 +22,7 @@ import {
 } from "@/lib/roulette/types";
 import { roulettePost } from "@/lib/roulette/client-api";
 import { payoutForBet } from "@/lib/roulette/payout";
+import { colorOf } from "@/lib/roulette/constants";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import { BetAmountControl } from "./BetAmountControl";
 import { BettingTable, type TableBetPayload } from "./BettingTable";
@@ -40,6 +41,20 @@ type GameState = {
   spinDurationSec: number;
   recentResults: number[];
 };
+
+/** Chip styles aligned with `RouletteWheel` pocket fills (#15803d / #b91c1c / #18181b). */
+function recentNumberChipClass(n: number): string {
+  const base =
+    "inline-flex h-5 w-7 shrink-0 items-center justify-center rounded border text-[9px] font-bold tabular-nums lg:h-6 lg:w-8 lg:text-[10px]";
+  switch (colorOf(n)) {
+    case "green":
+      return `${base} border-green-900/80 bg-[#15803d] text-white`;
+    case "red":
+      return `${base} border-red-900/90 bg-[#b91c1c] text-white`;
+    default:
+      return `${base} border-zinc-700 bg-[#18181b] text-zinc-100`;
+  }
+}
 
 type LiveBet = {
   type: BetType;
@@ -555,10 +570,7 @@ export function RouletteGameClient() {
         </p>
         <div className="flex min-h-[1.375rem] min-w-0 flex-1 gap-1 overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch] [scrollbar-width:none] lg:min-h-7 [&::-webkit-scrollbar]:hidden">
           {displayedRecents.slice(0, 15).map((n, i) => (
-            <span
-              key={`${n}-${i}`}
-              className="inline-flex h-5 w-7 shrink-0 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-[9px] font-bold tabular-nums text-zinc-200 lg:h-6 lg:w-8 lg:text-[10px]"
-            >
+            <span key={`${n}-${i}`} className={recentNumberChipClass(n)}>
               {n}
             </span>
           ))}
@@ -568,7 +580,7 @@ export function RouletteGameClient() {
   );
 
   return (
-    <div className="space-y-2 sm:space-y-4 lg:space-y-8">
+    <div className="space-y-1 sm:space-y-4 lg:space-y-8">
       {activityToasts.length > 0 ? (
         <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex max-w-[min(92vw,22rem)] -translate-x-1/2 flex-col gap-1.5 lg:bottom-6 lg:max-w-[min(90vw,24rem)] lg:gap-2">
           {activityToasts.map((t) => (
@@ -587,9 +599,9 @@ export function RouletteGameClient() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-start lg:gap-6">
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1.5 sm:rounded-xl sm:px-3 sm:py-2 lg:gap-4 lg:px-4 lg:py-3">
+      <div className="flex flex-col gap-1 sm:gap-3 lg:flex-row lg:items-start lg:gap-6">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-1 sm:gap-3 lg:gap-4">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
             <div className="min-w-0">
               <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
               <p className="truncate text-sm font-bold tabular-nums text-amber-400 sm:text-base lg:text-2xl">
@@ -639,7 +651,7 @@ export function RouletteGameClient() {
           ) : null}
         </div>
 
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:max-w-xl lg:gap-4">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-1 sm:gap-3 lg:max-w-xl lg:gap-4">
           <div className="order-1 lg:order-2">
             <BettingTable
               onBet={onBet}

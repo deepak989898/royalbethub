@@ -1,9 +1,9 @@
 "use client";
 
-import { motion, useMotionValue, animate } from "framer-motion";
-import { useEffect, useLayoutEffect } from "react";
+import { AnimatePresence, motion, useMotionValue, animate } from "framer-motion";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { colorOf } from "@/lib/roulette/constants";
-import { SPIN_ANIMATION_MS } from "@/lib/roulette/table-layout";
+import { SPIN_ANIMATION_MS, WIN_NUMBER_OVERLAY_MS } from "@/lib/roulette/table-layout";
 import {
   EUROPEAN_WHEEL_ORDER,
   ballArmTargetWorldDegrees,
@@ -25,8 +25,19 @@ export function RouletteWheel({
 }) {
   const ballAngle = useMotionValue(0);
   const wheelRotation = useMotionValue(0);
+  const [showWinOverlay, setShowWinOverlay] = useState(false);
   const r = 160;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
+
+  useEffect(() => {
+    if (!highlightWinner || winningNumber == null) {
+      setShowWinOverlay(false);
+      return;
+    }
+    setShowWinOverlay(true);
+    const id = window.setTimeout(() => setShowWinOverlay(false), WIN_NUMBER_OVERLAY_MS);
+    return () => clearTimeout(id);
+  }, [highlightWinner, winningNumber, spinTrigger]);
 
   /** Hydration / refresh while a result is already showing: snap ball + wheel (no spin). */
   useLayoutEffect(() => {
@@ -51,6 +62,40 @@ export function RouletteWheel({
 
   return (
     <div className="relative mx-auto flex w-full max-w-[min(100%,220px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
+      <div className="mb-0.5 flex min-h-[2.25rem] w-full flex-col items-center justify-center sm:min-h-[2.75rem] md:min-h-[3rem]">
+        <AnimatePresence mode="wait">
+          {showWinOverlay && winningNumber != null ? (
+            <motion.span
+              key={`overlay-${winningNumber}-${spinTrigger}`}
+              initial={{ scale: 0.5, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
+              className={`text-3xl font-black tabular-nums tracking-tight sm:text-4xl md:text-5xl lg:text-6xl ${
+                colorOf(winningNumber) === "red"
+                  ? "text-red-400 drop-shadow-[0_0_24px_rgba(248,113,113,0.45)]"
+                  : colorOf(winningNumber) === "black"
+                    ? "text-zinc-100 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                    : "text-emerald-400 drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]"
+              }`}
+            >
+              {winningNumber}
+            </motion.span>
+          ) : phase === "result" && winningNumber != null && !highlightWinner ? (
+            <motion.span
+              key="spinning"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-sm text-zinc-500"
+              aria-hidden
+            >
+              …
+            </motion.span>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
       <div className="relative aspect-square w-full max-w-[210px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px]">
         <div className="absolute inset-0 rounded-full border-2 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)] lg:border-4" />
 
@@ -132,30 +177,6 @@ export function RouletteWheel({
         </div>
 
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
-      </div>
-
-      <div className="mt-1 flex min-h-[2.75rem] flex-col items-center justify-center sm:mt-2 sm:min-h-[3.25rem] md:mt-4 md:min-h-[4.5rem]">
-        {phase === "result" && winningNumber != null && highlightWinner ? (
-          <motion.span
-            key={winningNumber}
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className={`text-3xl font-black tabular-nums tracking-tight sm:text-4xl md:text-5xl lg:text-6xl ${
-              colorOf(winningNumber) === "red"
-                ? "text-red-400 drop-shadow-[0_0_24px_rgba(248,113,113,0.45)]"
-                : colorOf(winningNumber) === "black"
-                  ? "text-zinc-100 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                  : "text-emerald-400 drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]"
-            }`}
-          >
-            {winningNumber}
-          </motion.span>
-        ) : phase === "result" ? (
-          <span className="text-sm text-zinc-500" aria-hidden>
-            …
-          </span>
-        ) : null}
       </div>
     </div>
   );

@@ -25,8 +25,8 @@ export function RouletteShell({ children }: { children: React.ReactNode }) {
         }}
       />
       <RouletteNav userEmail={email} />
-      <div className="relative mx-auto max-w-6xl px-2 py-3 sm:px-6 sm:py-8 lg:py-10">{children}</div>
-      <p className="relative px-2 pb-3 text-center text-[10px] text-zinc-600 sm:px-6 sm:pb-8 sm:text-[11px]">
+      <div className="relative mx-auto max-w-6xl px-2 py-2 sm:px-6 sm:py-8 lg:py-10">{children}</div>
+      <p className="relative px-2 pb-2 text-center text-[10px] text-zinc-600 sm:px-6 sm:pb-8 sm:text-[11px]">
         Simulated casino credits only — not real money. 18+.
       </p>
     </div>

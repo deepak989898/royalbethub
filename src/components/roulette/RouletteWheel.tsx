@@ -25,19 +25,27 @@ export function RouletteWheel({
 }) {
   const ballAngle = useMotionValue(0);
   const wheelRotation = useMotionValue(0);
-  const [showWinOverlay, setShowWinOverlay] = useState(false);
+  /** After ball stops, show win number until timer hides it (must not lag one frame behind `highlightWinner`). */
+  const [winOverlayDismissed, setWinOverlayDismissed] = useState(false);
   const r = 160;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!highlightWinner || winningNumber == null) {
-      setShowWinOverlay(false);
+      setWinOverlayDismissed(false);
       return;
     }
-    setShowWinOverlay(true);
-    const id = window.setTimeout(() => setShowWinOverlay(false), WIN_NUMBER_OVERLAY_MS);
+    setWinOverlayDismissed(false);
+  }, [highlightWinner, winningNumber, spinTrigger]);
+
+  useEffect(() => {
+    if (!highlightWinner || winningNumber == null) return;
+    const id = window.setTimeout(() => setWinOverlayDismissed(true), WIN_NUMBER_OVERLAY_MS);
     return () => clearTimeout(id);
   }, [highlightWinner, winningNumber, spinTrigger]);
+
+  const showWinOverlay =
+    highlightWinner && winningNumber != null && !winOverlayDismissed;
 
   /** Hydration / refresh while a result is already showing: snap ball + wheel (no spin). */
   useLayoutEffect(() => {
@@ -63,7 +71,7 @@ export function RouletteWheel({
   return (
     <div className="relative mx-auto flex w-full max-w-[min(100%,220px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
       <div className="mb-0.5 flex min-h-[2.25rem] w-full flex-col items-center justify-center sm:min-h-[2.75rem] md:min-h-[3rem]">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {showWinOverlay && winningNumber != null ? (
             <motion.span
               key={`overlay-${winningNumber}-${spinTrigger}`}

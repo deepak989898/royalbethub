@@ -601,32 +601,34 @@ export function RouletteGameClient() {
 
       <div className="flex flex-col gap-1 sm:gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-1 sm:gap-3 lg:gap-4">
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
-            <div className="min-w-0">
-              <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
-              <p className="truncate text-sm font-bold tabular-nums text-amber-400 sm:text-base lg:text-2xl">
-                {displayBalance != null ? `₹${displayBalance.toLocaleString("en-IN")}` : "—"}
-              </p>
+          <div className="flex flex-col gap-0">
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
+                <p className="truncate text-sm font-bold tabular-nums text-amber-400 sm:text-base lg:text-2xl">
+                  {displayBalance != null ? `₹${displayBalance.toLocaleString("en-IN")}` : "—"}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">
+                  <span className="sm:hidden">{game?.phase === "betting" ? "Time" : "Spin"}</span>
+                  <span className="hidden sm:inline">
+                    {game?.phase === "betting" ? "Time left" : "Status"}
+                  </span>
+                </p>
+                <p className="text-sm font-mono font-bold tabular-nums text-zinc-100 sm:text-base lg:text-2xl">
+                  {game?.phase === "betting" ? `${secondsLeft}s` : "…"}
+                </p>
+              </div>
             </div>
-            <div className="shrink-0 text-right">
-              <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">
-                <span className="sm:hidden">{game?.phase === "betting" ? "Time" : "Spin"}</span>
-                <span className="hidden sm:inline">
-                  {game?.phase === "betting" ? "Time left" : "Status"}
-                </span>
-              </p>
-              <p className="text-sm font-mono font-bold tabular-nums text-zinc-100 sm:text-base lg:text-2xl">
-                {game?.phase === "betting" ? `${secondsLeft}s` : "…"}
-              </p>
-            </div>
-          </div>
 
-          <RouletteWheel
-            winningNumber={game?.winningNumber ?? null}
-            spinTrigger={spinRev}
-            phase={game?.phase ?? "betting"}
-            highlightWinner={game?.phase === "result" && spinComplete}
-          />
+            <RouletteWheel
+              winningNumber={game?.winningNumber ?? null}
+              spinTrigger={spinRev}
+              phase={game?.phase ?? "betting"}
+              highlightWinner={game?.phase === "result" && spinComplete}
+            />
+          </div>
 
           {spinComplete && game?.phase === "result" && userRoundWinTotal > 0 ? (
             <motion.div

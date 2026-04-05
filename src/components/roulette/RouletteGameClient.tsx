@@ -61,7 +61,11 @@ export function RouletteGameClient() {
   const [adminMissing, setAdminMissing] = useState(false);
   const [spinRev, setSpinRev] = useState(0);
   const prevPhase = useRef<Phase | null>(null);
-  const resolvedForRound = useRef<string | null>(null);
+  /** Prevents overlapping POSTs; never “stick” on failed/409 responses. */
+  const resolveInFlightRef = useRef(false);
+  const openNextInFlightRef = useRef(false);
+  const gameRef = useRef<GameState | null>(null);
+  gameRef.current = game;
   const { playSpin, playWin, playChip } = useRouletteSounds();
 
   useEffect(() => {
@@ -171,33 +175,68 @@ export function RouletteGameClient() {
   }, [game, playSpin]);
 
   useEffect(() => {
-    if (!game || game.phase !== "betting" || !game.endsAt) return;
-    if (Date.now() >= game.endsAt) return;
-    const id = window.setInterval(() => {
-      if (Date.now() < game.endsAt!) return;
-      if (resolvedForRound.current === game.roundId) return;
-      resolvedForRound.current = game.roundId;
-      void fetch("/api/roulette/resolve-round", { method: "POST" }).catch(() => {
-        resolvedForRound.current = null;
-      });
-    }, 500);
+    if (!isFirebaseConfigured()) return;
+
+    async function tryResolveRound() {
+      const g = gameRef.current;
+      if (!g || g.phase !== "betting" || !g.endsAt) return;
+      if (Date.now() < g.endsAt) return;
+      if (resolveInFlightRef.current) return;
+      resolveInFlightRef.current = true;
+      try {
+        const res = await fetch("/api/roulette/resolve-round", { method: "POST" });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 409 && /still in progress/i.test(String(body.error || ""))) {
+          return;
+        }
+      } catch {
+        /* network error — retry on next tick */
+      } finally {
+        resolveInFlightRef.current = false;
+      }
+    }
+
+    const g = gameRef.current;
+    if (!g || g.phase !== "betting" || !g.endsAt) return;
+
+    void tryResolveRound();
+    const id = window.setInterval(() => void tryResolveRound(), 400);
     return () => clearInterval(id);
   }, [game?.roundId, game?.phase, game?.endsAt]);
 
   useEffect(() => {
-    if (!game || game.phase !== "result" || !game.resultShownUntil) return;
-    const ms = Math.max(0, game.resultShownUntil - Date.now()) + 400;
-    const t = window.setTimeout(() => {
-      void fetch("/api/roulette/open-next", { method: "POST" });
-    }, ms);
-    return () => clearTimeout(t);
-  }, [game?.phase, game?.resultShownUntil, game?.roundId]);
+    if (!isFirebaseConfigured()) return;
 
-  useEffect(() => {
-    if (game?.phase === "betting") {
-      resolvedForRound.current = null;
+    async function tryOpenNext() {
+      const g = gameRef.current;
+      if (!g || g.phase !== "result" || !g.resultShownUntil) return;
+      if (Date.now() < g.resultShownUntil) return;
+      if (openNextInFlightRef.current) return;
+      openNextInFlightRef.current = true;
+      try {
+        const res = await fetch("/api/roulette/open-next", { method: "POST" });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 409 && /still showing/i.test(String(body.error || ""))) {
+          return;
+        }
+      } catch {
+        /* retry */
+      } finally {
+        openNextInFlightRef.current = false;
+      }
     }
-  }, [game?.roundId, game?.phase]);
+
+    const g = gameRef.current;
+    if (!g || g.phase !== "result" || !g.resultShownUntil) return;
+
+    const ms = Math.max(0, g.resultShownUntil - Date.now()) + 300;
+    const t0 = window.setTimeout(() => void tryOpenNext(), ms);
+    const id = window.setInterval(() => void tryOpenNext(), 600);
+    return () => {
+      clearTimeout(t0);
+      clearInterval(id);
+    };
+  }, [game?.phase, game?.resultShownUntil, game?.roundId]);
 
   useEffect(() => {
     setStaged(new Map());

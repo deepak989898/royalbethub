@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { Shield, TrendingUp, Zap } from "lucide-react";
+import Link from "next/link";
 import { getDb, isFirebaseConfigured } from "@/lib/firebase";
+import { filterCasinosForIndia, normalizeCasinoSite } from "@/lib/casino-utils";
 import type { CasinoSite } from "@/lib/types";
 import { CasinoCard } from "./CasinoCard";
 import { BonusLeadForm } from "./BonusLeadForm";
+import { LimitedBonusCountdown } from "./LimitedBonusCountdown";
+import { LiveWinsTicker } from "./LiveWinsTicker";
+import { WithdrawalProofSection } from "./WithdrawalProofSection";
+import { TestimonialsSection } from "./TestimonialsSection";
 
 export function HomeClient() {
   const [sites, setSites] = useState<CasinoSite[]>([]);
@@ -26,11 +32,11 @@ export function HomeClient() {
         const snap = await getDocs(q);
         const rows: CasinoSite[] = [];
         snap.forEach((d) => {
-          const data = d.data() as CasinoSite;
-          if (data.active !== false) rows.push({ ...data, slug: data.slug || d.id });
+          const data = normalizeCasinoSite(d.data() as Record<string, unknown>, d.id);
+          if (data.active !== false) rows.push(data);
         });
         if (!cancelled) {
-          setSites(rows);
+          setSites(filterCasinosForIndia(rows));
           setErr(null);
         }
       } catch {
@@ -50,35 +56,50 @@ export function HomeClient() {
 
   return (
     <>
-      <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pt-16">
+      <section className="relative overflow-hidden px-4 pb-12 pt-8 sm:px-6 sm:pt-10">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.35), transparent), radial-gradient(ellipse 60% 40% at 100% 0%, rgba(168, 85, 247, 0.15), transparent)",
+              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.35), transparent), radial-gradient(ellipse 60% 40% at 100% 0%, rgba(220, 20, 60, 0.12), transparent)",
           }}
         />
+        <div className="relative mx-auto max-w-6xl space-y-6">
+          <LiveWinsTicker />
+          <LimitedBonusCountdown />
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden px-4 pb-16 sm:px-6">
         <div className="relative mx-auto max-w-6xl text-center">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-amber-400/90">
-            Independent affiliate picks
+            India-focused affiliate picks
           </p>
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Find the right casino{" "}
+            Best casino &amp; betting apps{" "}
             <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent">
-              for how you play
+              compared for Indian players
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-400">
-            Royal Bet Hub explains what each brand is best at—sports depth, slots variety, or live
-            tables—so you can choose confidently. When you use our buttons, we may earn a
-            commission at no extra cost to you.
+            RoyalBetHub explains what each brand is best at—UPI-friendly flows, sports depth, slots,
+            and live tables. We track outbound clicks and may earn a commission when you sign up
+            through our links.
+          </p>
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-500">
+            Target topics we cover in the{" "}
+            <Link href="/blog" className="text-amber-400 hover:underline">
+              blog
+            </Link>
+            : best casino apps in India, online betting real money India, legality by state, and
+            operator reviews.
           </p>
           <div className="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-3">
             {[
               { icon: Shield, t: "Transparent comparisons", d: "Why a site fits your style." },
-              { icon: Zap, t: "One-tap partner links", d: "Tracked clicks; you stay in control." },
-              { icon: TrendingUp, t: "Extra bonus queue", d: "50% uplift for qualifying signups." },
+              { icon: Zap, t: "Tracked partner links", d: "CTAs open in a new tab for safety." },
+              { icon: TrendingUp, t: "Bonus + promo codes", d: "See cards, offers page, and admin." },
             ].map(({ icon: Icon, t, d }) => (
               <div
                 key={t}
@@ -97,8 +118,9 @@ export function HomeClient() {
         <div className="mx-auto max-w-6xl">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">Compared partner sites</h2>
           <p className="mt-2 max-w-2xl text-zinc-400">
-            Editorial summaries only—not financial advice. Verify legality and offers in your
-            region on the operator&apos;s site.
+            Editorial summaries only—not financial advice. Geo-targeted for India where
+            <code className="mx-1 rounded bg-white/10 px-1 text-xs">regions</code> includes IN or is
+            unset. Verify legality in your state on the operator&apos;s site.
           </p>
           {err ? (
             <p className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
@@ -128,8 +150,14 @@ export function HomeClient() {
               ))}
             </div>
           )}
+
+          <div className="mt-12">
+            <WithdrawalProofSection />
+          </div>
         </div>
       </section>
+
+      <TestimonialsSection />
 
       <section id="bonus" className="scroll-mt-24 border-t border-white/10 bg-black/20 px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-2xl">

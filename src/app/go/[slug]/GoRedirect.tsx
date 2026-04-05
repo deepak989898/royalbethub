@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { getDb, isFirebaseConfigured } from "@/lib/firebase";
-import type { CasinoSite } from "@/lib/types";
+import { normalizeCasinoSite } from "@/lib/casino-utils";
 import { logClick } from "@/lib/analytics";
 import Link from "next/link";
 
@@ -29,7 +29,7 @@ export function GoRedirect() {
         setMessage("This partner is no longer listed.");
         return;
       }
-      const site = snap.data() as CasinoSite;
+      const site = normalizeCasinoSite(snap.data() as Record<string, unknown>, snap.id);
       if (!site.url) {
         setMessage("URL missing for this listing.");
         return;

@@ -28,6 +28,11 @@ export function CasinoCard({ site }: Props) {
         </div>
       </div>
       <p className="text-sm leading-relaxed text-zinc-400">{site.description}</p>
+      {site.promoCode ? (
+        <p className="mt-3 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
+          Promo: <strong className="font-mono">{site.promoCode}</strong> (verify on cashier)
+        </p>
+      ) : null}
       <ul className="mt-4 space-y-2 text-sm text-zinc-300">
         {site.pros.map((p) => (
           <li key={p} className="flex gap-2">
@@ -36,13 +41,21 @@ export function CasinoCard({ site }: Props) {
           </li>
         ))}
       </ul>
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <Link
           href={`/go/${site.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex min-h-[48px] min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-center text-sm font-semibold text-[#1a1005] transition group-hover:from-amber-400 group-hover:to-amber-500 sm:flex-none"
         >
           Play &amp; sign up
           <ArrowUpRight className="h-4 w-4" aria-hidden />
+        </Link>
+        <Link
+          href={`/reviews/${site.slug}`}
+          className="text-sm font-medium text-amber-400/90 underline-offset-2 hover:underline"
+        >
+          Full review
         </Link>
       </div>
     </article>

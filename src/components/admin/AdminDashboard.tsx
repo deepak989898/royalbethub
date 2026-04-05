@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { DEFAULT_CASINO_SITES } from "@/lib/default-sites";
 import { getDb, getFirebaseAuth } from "@/lib/firebase";
+import { normalizeCasinoSite } from "@/lib/casino-utils";
 import type { AnalyticsEvent, BonusLead, CasinoSite } from "@/lib/types";
 
 type EventRow = AnalyticsEvent & { id: string };
@@ -46,8 +47,7 @@ export function AdminDashboard() {
       const siteSnap = await getDocs(sq);
       const siteRows: CasinoSite[] = [];
       siteSnap.forEach((d) => {
-        const data = d.data() as CasinoSite;
-        siteRows.push({ ...data, slug: data.slug || d.id });
+        siteRows.push(normalizeCasinoSite(d.data() as Record<string, unknown>, d.id));
       });
       setSites(siteRows);
 
@@ -119,12 +119,25 @@ export function AdminDashboard() {
       sortOrder: (sites[sites.length - 1]?.sortOrder ?? 0) + 10,
       active: true,
       badge: "",
+      cons: [],
+      paymentMethods: [],
+      bonusDetails: "",
+      welcomeOffer: "",
+      noDepositNote: "",
+      promoCode: "",
+      regions: ["IN"],
     });
     setModal("add");
   }
 
   function openEdit(site: CasinoSite) {
-    setForm({ ...site, pros: [...site.pros] });
+    setForm({
+      ...site,
+      pros: [...site.pros],
+      cons: [...(site.cons ?? [])],
+      paymentMethods: [...(site.paymentMethods ?? [])],
+      regions: [...(site.regions ?? [])],
+    });
     setModal("edit");
   }
 
@@ -141,6 +154,22 @@ export function AdminDashboard() {
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
+    const consLines = (Array.isArray(form.cons) ? form.cons.join("\n") : String(form.cons || ""))
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const payLines = (
+      Array.isArray(form.paymentMethods)
+        ? form.paymentMethods.join("\n")
+        : String(form.paymentMethods || "")
+    )
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const regionsRaw = String(form.regions || "")
+      .split(/[\n,]+/)
+      .map((x) => x.trim().toUpperCase())
+      .filter(Boolean);
     const payload: CasinoSite = {
       slug,
       name: form.name!.trim(),
@@ -148,6 +177,13 @@ export function AdminDashboard() {
       description: (form.description || "").trim(),
       url: form.url!.trim(),
       pros,
+      cons: consLines.length ? consLines : undefined,
+      paymentMethods: payLines.length ? payLines : undefined,
+      bonusDetails: (form.bonusDetails || "").trim() || undefined,
+      welcomeOffer: (form.welcomeOffer || "").trim() || undefined,
+      noDepositNote: (form.noDepositNote || "").trim() || undefined,
+      promoCode: (form.promoCode || "").trim() || undefined,
+      regions: regionsRaw.length ? regionsRaw : undefined,
       rating: Number(form.rating) || 4,
       sortOrder: Number(form.sortOrder) || 0,
       active: Boolean(form.active),
@@ -460,6 +496,92 @@ export function AdminDashboard() {
                     }))
                   }
                   rows={4}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Cons (one per line, optional)
+                <textarea
+                  value={Array.isArray(form.cons) ? form.cons.join("\n") : ""}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      cons: e.target.value.split("\n").map((x) => x.trim()).filter(Boolean),
+                    }))
+                  }
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Payment methods (one per line)
+                <textarea
+                  value={
+                    Array.isArray(form.paymentMethods) ? form.paymentMethods.join("\n") : ""
+                  }
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      paymentMethods: e.target.value
+                        .split("\n")
+                        .map((x) => x.trim())
+                        .filter(Boolean),
+                    }))
+                  }
+                  rows={3}
+                  placeholder={"UPI\nNetBanking\nCards"}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Welcome offer (short)
+                <input
+                  value={form.welcomeOffer || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, welcomeOffer: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                No-deposit note (optional)
+                <input
+                  value={form.noDepositNote || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, noDepositNote: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Bonus details (longer, optional)
+                <textarea
+                  value={form.bonusDetails || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, bonusDetails: e.target.value }))}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Promo code (optional)
+                <input
+                  value={form.promoCode || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, promoCode: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                />
+              </label>
+              <label className="block text-xs text-zinc-500">
+                Regions (comma-separated, e.g. IN,ALL)
+                <input
+                  value={
+                    Array.isArray(form.regions) ? form.regions.join(",") : String(form.regions || "")
+                  }
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      regions: e.target.value
+                        .split(/[,]+/)
+                        .map((x) => x.trim().toUpperCase())
+                        .filter(Boolean),
+                    }))
+                  }
+                  placeholder="IN"
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
                 />
               </label>

@@ -7,6 +7,18 @@ export type CasinoSite = {
   description: string;
   url: string;
   pros: string[];
+  /** Optional cons for review pages */
+  cons?: string[];
+  /** e.g. UPI, NetBanking — one per admin line */
+  paymentMethods?: string[];
+  /** Longer bonus copy for review / bonus pages */
+  bonusDetails?: string;
+  welcomeOffer?: string;
+  noDepositNote?: string;
+  /** Shown on cards when set */
+  promoCode?: string;
+  /** Geo filter: IN = India-focused listing; empty = show everywhere */
+  regions?: string[];
   rating: number;
   sortOrder: number;
   active: boolean;

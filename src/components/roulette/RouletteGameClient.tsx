@@ -449,6 +449,21 @@ export function RouletteGameClient() {
     return s;
   }, [staged]);
 
+  /** Wallet header: during betting with staged lines, show what is left after those bets (not yet placed). */
+  const headerBalance = useMemo(() => {
+    if (displayBalance == null) return null;
+    if (game?.phase === "betting" && totalStaged > 0) {
+      return Math.max(0, displayBalance - totalStaged);
+    }
+    return displayBalance;
+  }, [displayBalance, game?.phase, totalStaged]);
+
+  const stakeMaxHint = useMemo(() => {
+    if (balance == null) return null;
+    if (game?.phase !== "betting") return balance;
+    return Math.max(0, balance - totalStaged);
+  }, [balance, game?.phase, totalStaged]);
+
   const onBet = useCallback(
     (p: TableBetPayload) => {
       if (!user || blocked || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
@@ -604,10 +619,30 @@ export function RouletteGameClient() {
           <div className="flex flex-col gap-0">
             <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
               <div className="min-w-0">
-                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
-                <p className="truncate text-sm font-bold tabular-nums text-amber-400 sm:text-base lg:text-2xl">
-                  {displayBalance != null ? `₹${displayBalance.toLocaleString("en-IN")}` : "—"}
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">
+                  {game?.phase === "betting" && totalStaged > 0 ? "Remaining" : "Balance"}
                 </p>
+                <p
+                  className={`truncate text-sm font-bold tabular-nums sm:text-base lg:text-2xl ${
+                    game?.phase === "betting" &&
+                    totalStaged > 0 &&
+                    headerBalance != null &&
+                    headerBalance === 0
+                      ? "text-red-400"
+                      : "text-amber-400"
+                  }`}
+                >
+                  {headerBalance != null ? `₹${headerBalance.toLocaleString("en-IN")}` : "—"}
+                </p>
+                {game?.phase === "betting" && totalStaged > 0 && displayBalance != null ? (
+                  <p className="mt-0.5 truncate text-[9px] tabular-nums text-zinc-500 lg:text-[10px]">
+                    Wallet ₹{displayBalance.toLocaleString("en-IN")}
+                    <span className="text-zinc-600">
+                      {" "}
+                      · staged ₹{totalStaged.toLocaleString("en-IN")}
+                    </span>
+                  </p>
+                ) : null}
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">
@@ -674,7 +709,7 @@ export function RouletteGameClient() {
             <BetAmountControl
               value={betUnit}
               onChange={setBetUnit}
-              maxHint={balance}
+              maxHint={stakeMaxHint}
               disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
             />
             {totalStaged > 0 ? (

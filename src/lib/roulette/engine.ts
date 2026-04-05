@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { evenMoneyMultiplier, isBlack, isRed, straightMultiplier } from "./constants";
 import type { BetType } from "./types";
 
@@ -44,19 +45,23 @@ export function totalPayoutForResult(result: number, bets: BetForEngine[]): numb
 
 /**
  * RTP / house edge: pick the winning number that minimizes total payout.
- * Tie-break: lowest number.
+ * When there are no bets, every outcome ties at 0 — use a fair random spin (not always 0).
+ * When multiple numbers tie for minimum payout, pick randomly among ties (not always 0).
  */
 export function pickMinPayoutNumber(bets: BetForEngine[]): number {
-  let best = 0;
-  let bestPay = Infinity;
-  for (let n = 0; n <= 36; n++) {
-    const pay = totalPayoutForResult(n, bets);
-    if (pay < bestPay || (pay === bestPay && n < best)) {
-      bestPay = pay;
-      best = n;
-    }
+  if (bets.length === 0) {
+    return randomInt(0, 37);
   }
-  return best;
+  const payouts: number[] = [];
+  for (let n = 0; n <= 36; n++) {
+    payouts.push(totalPayoutForResult(n, bets));
+  }
+  const minPay = Math.min(...payouts);
+  const candidates: number[] = [];
+  for (let n = 0; n <= 36; n++) {
+    if (payouts[n] === minPay) candidates.push(n);
+  }
+  return candidates[randomInt(0, candidates.length)]!;
 }
 
 export function validateStraightSelection(n: unknown): n is number {

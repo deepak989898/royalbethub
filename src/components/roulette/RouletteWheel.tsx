@@ -1,9 +1,13 @@
 "use client";
 
 import { motion, useMotionValue, animate } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { colorOf } from "@/lib/roulette/constants";
-import { EUROPEAN_WHEEL_ORDER, targetRotationDegrees } from "@/lib/roulette/wheel-layout";
+import {
+  EUROPEAN_WHEEL_ORDER,
+  ballArmTargetDegrees,
+  pocketCenterAngleDegreesFromTop,
+} from "@/lib/roulette/wheel-layout";
 
 export function RouletteWheel({
   winningNumber,
@@ -14,32 +18,34 @@ export function RouletteWheel({
   spinTrigger: number;
   phase: "betting" | "result";
 }) {
-  const rotation = useMotionValue(0);
-
-  useEffect(() => {
-    if (spinTrigger === 0 || winningNumber == null) return;
-    const current = rotation.get();
-    const target = targetRotationDegrees(winningNumber, 6, current);
-    void animate(rotation, target, { duration: 5.2, ease: [0.12, 0.8, 0.12, 1] });
-  }, [spinTrigger, winningNumber, rotation]);
-
+  const ballAngle = useMotionValue(0);
   const r = 160;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
 
+  /** Hydration / refresh while a result is already showing: snap ball to pocket (no spin). */
+  useLayoutEffect(() => {
+    if (phase === "result" && winningNumber != null && spinTrigger === 0) {
+      ballAngle.set(pocketCenterAngleDegreesFromTop(winningNumber));
+    }
+  }, [phase, winningNumber, spinTrigger, ballAngle]);
+
+  useEffect(() => {
+    if (spinTrigger === 0 || winningNumber == null) return;
+    const current = ballAngle.get();
+    const target = ballArmTargetDegrees(winningNumber, 6, current);
+    void animate(ballAngle, target, { duration: 5.4, ease: [0.15, 0.75, 0.1, 1] });
+  }, [spinTrigger, winningNumber, ballAngle]);
+
   return (
     <div className="relative mx-auto flex w-full max-w-[min(100%,380px)] flex-col items-center">
-      <div
-        className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]"
-        aria-hidden
-      >
-        ▼
-      </div>
+      <p className="mb-1 text-center text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+        Ball lands in pocket
+      </p>
       <div className="relative aspect-square w-full max-w-[340px]">
         <div className="absolute inset-0 rounded-full border-4 border-amber-700/80 bg-gradient-to-b from-amber-950 to-black shadow-[0_0_40px_rgba(245,158,11,0.15)]" />
-        <motion.div
-          className="absolute inset-[10px] rounded-full"
-          style={{ rotate: rotation }}
-        >
+
+        {/* Static wheel — numbers stay fixed; only the ball moves */}
+        <div className="absolute inset-[10px] rounded-full">
           <svg viewBox={`-${r} -${r} ${r * 2} ${r * 2}`} className="h-full w-full">
             {EUROPEAN_WHEEL_ORDER.map((num, i) => {
               const a0 = i * step - Math.PI / 2;
@@ -58,13 +64,15 @@ export function RouletteWheel({
               const mid = (a0 + a1) / 2;
               const tx = Math.cos(mid) * (r * 0.72);
               const ty = Math.sin(mid) * (r * 0.72);
+              const isWin = phase === "result" && winningNumber != null && num === winningNumber;
               return (
                 <g key={`${num}-${i}`}>
                   <path
                     d={`M 0 0 L ${x0} ${y0} A ${r - 8} ${r - 8} 0 0 1 ${x1} ${y1} Z`}
                     fill={fill}
-                    stroke="rgba(0,0,0,0.5)"
-                    strokeWidth={1}
+                    stroke={isWin ? "rgba(250, 204, 21, 0.95)" : "rgba(0,0,0,0.5)"}
+                    strokeWidth={isWin ? 3 : 1}
+                    filter={isWin ? "url(#winGlow)" : undefined}
                   />
                   <text
                     x={tx}
@@ -81,10 +89,39 @@ export function RouletteWheel({
                 </g>
               );
             })}
+            <defs>
+              <filter id="winGlow" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
           </svg>
-        </motion.div>
-        <div className="absolute left-1/2 top-1/2 z-10 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
+        </div>
+
+        {/* Orbiting ball on outer rim (spoke from center, ball at ~top of ring when angle = 0) */}
+        <div className="pointer-events-none absolute inset-[4px] z-[15] flex items-center justify-center">
+          <motion.div className="absolute inset-0" style={{ rotate: ballAngle }}>
+            <div
+              className="absolute left-1/2 top-[3.5%] z-10 -translate-x-1/2"
+              style={{
+                width: "clamp(10px, 3.2vw, 14px)",
+                height: "clamp(10px, 3.2vw, 14px)",
+              }}
+            >
+              <div
+                className="h-full w-full rounded-full border border-white/90 bg-gradient-to-br from-white via-zinc-100 to-zinc-400 shadow-[0_0_14px_rgba(255,255,255,0.85),inset_0_1px_2px_rgba(255,255,255,0.9)]"
+                aria-hidden
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
       </div>
+
       {phase === "result" && winningNumber != null ? (
         <p className="mt-4 text-center text-sm text-zinc-400">
           Result:{" "}

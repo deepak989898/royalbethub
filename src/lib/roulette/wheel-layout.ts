@@ -4,20 +4,30 @@ export const EUROPEAN_WHEEL_ORDER = [
   31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
 ] as const;
 
-const STEP = 360 / EUROPEAN_WHEEL_ORDER.length;
+export const WHEEL_STEP_DEG = 360 / EUROPEAN_WHEEL_ORDER.length;
 
 export function pocketIndex(n: number): number {
   const i = EUROPEAN_WHEEL_ORDER.indexOf(n as (typeof EUROPEAN_WHEEL_ORDER)[number]);
   return i >= 0 ? i : 0;
 }
 
-/** Degrees to rotate the wheel (CW positive) so pocket `n` settles at the top pointer. */
-export function targetRotationDegrees(n: number, fullSpins: number, currentDeg: number): number {
+/**
+ * Clockwise degrees from 12 o'clock to the **center** of the pocket for `n` on a static wheel
+ * (first divider at top; pocket 0 is the first slice below that edge).
+ */
+export function pocketCenterAngleDegreesFromTop(n: number): number {
   const idx = pocketIndex(n);
-  const pocketAngle = idx * STEP;
+  return (idx + 0.5) * WHEEL_STEP_DEG;
+}
+
+/**
+ * Framer-motion `rotate` for a ball arm pinned at wheel center: ball sits at top when angle is 0°;
+ * positive = clockwise. Target angle so the ball rests over the pocket center.
+ */
+export function ballArmTargetDegrees(n: number, fullSpins: number, currentDeg: number): number {
+  const thetaFinal = pocketCenterAngleDegreesFromTop(n);
   const normalized = ((currentDeg % 360) + 360) % 360;
-  const align = (360 - pocketAngle) % 360;
-  const delta = align - normalized;
-  const extra = delta <= 0 ? delta + 360 : delta;
-  return currentDeg + fullSpins * 360 + extra;
+  let delta = thetaFinal - normalized;
+  if (delta < 0) delta += 360;
+  return currentDeg + fullSpins * 360 + delta;
 }

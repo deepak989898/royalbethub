@@ -53,7 +53,7 @@ export function BetAmountControl({
   }
 
   return (
-    <div className="space-y-2 lg:space-y-3">
+    <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
       <div className="flex flex-wrap items-end gap-2 lg:gap-3">
         <label className="block min-w-0 flex-1 text-[10px] uppercase tracking-wider text-zinc-500 lg:min-w-[8rem] lg:text-xs">
           Stake ₹ (×{BET_STEP})

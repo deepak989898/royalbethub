@@ -72,7 +72,7 @@ function NumberCell({
       : "bg-zinc-900 border-zinc-600 text-zinc-100";
 
   return (
-    <div className="relative min-h-[1.6rem] min-w-0 flex-1 lg:min-h-[2.35rem]">
+    <div className="relative min-h-[1.45rem] min-w-0 flex-1 sm:min-h-[1.6rem] lg:min-h-[2.35rem]">
       <button
         type="button"
         disabled={disabled}
@@ -80,7 +80,7 @@ function NumberCell({
           const { x, y } = normClick(e);
           onBet(resolveNumberCellClick(r, c, x, y));
         }}
-        className={`relative flex h-full min-h-[1.6rem] w-full items-center justify-center rounded border text-[10px] font-semibold transition lg:min-h-[2.35rem] lg:text-xs ${
+        className={`relative flex h-full min-h-[1.45rem] w-full items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.35rem] lg:text-xs ${
           disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
         } ${bg} ${stagedKeys.has(sk) ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
       >
@@ -109,7 +109,7 @@ export function BettingTable({
   const totals = aggregate(liveBets);
 
   function cellClass(base: string, active: boolean) {
-    return `${base} relative flex min-h-[1.6rem] items-center justify-center rounded border text-[10px] font-semibold transition lg:min-h-[2.25rem] lg:rounded-md lg:text-xs ${
+    return `${base} relative flex min-h-[1.45rem] items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.25rem] lg:rounded-md lg:text-xs ${
       disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
     } ${active ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`;
   }
@@ -118,8 +118,8 @@ export function BettingTable({
   const colKeys = [3, 2, 1] as const;
 
   return (
-    <div className="w-full space-y-1.5 overflow-x-auto pb-1 lg:space-y-2 lg:pb-2">
-      <div className="flex min-w-[min(100%,260px)] gap-0.5 sm:min-w-[300px] lg:min-w-[320px] lg:gap-1">
+    <div className="w-full space-y-1 overflow-x-auto pb-0.5 sm:space-y-1.5 sm:pb-1 lg:space-y-2 lg:pb-2">
+      <div className="flex min-w-[min(100%,248px)] gap-px sm:min-w-[260px] sm:gap-0.5 md:min-w-[300px] lg:min-w-[320px] lg:gap-1">
         <button
           type="button"
           disabled={disabled}
@@ -128,7 +128,7 @@ export function BettingTable({
             onBet(resolveZeroCellClick(x, y));
           }}
           className={cellClass(
-            "relative flex w-8 shrink-0 flex-col items-center justify-center rounded-md border border-emerald-700 bg-emerald-800 py-5 text-[11px] text-white lg:w-11 lg:rounded-lg lg:py-8 lg:text-sm",
+            "relative flex w-7 shrink-0 flex-col items-center justify-center rounded border border-emerald-700 bg-emerald-800 py-4 text-[10px] text-white sm:w-8 sm:rounded-md sm:py-5 sm:text-[11px] lg:w-11 lg:rounded-lg lg:py-8 lg:text-sm",
             stagedKeys.has(zeroKey)
           )}
         >

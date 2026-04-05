@@ -8,6 +8,8 @@ import Link from "next/link";
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { roulettePost } from "@/lib/roulette/client-api";
 
+const WALLET_MSG_DISMISS_MS = 6500;
+
 export function RouletteWalletClient() {
   const [user, setUser] = useState<{ uid: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -17,6 +19,12 @@ export function RouletteWalletClient() {
   const [withdraw, setWithdraw] = useState("100");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (msg == null) return;
+    const t = window.setTimeout(() => setMsg(null), WALLET_MSG_DISMISS_MS);
+    return () => clearTimeout(t);
+  }, [msg]);
 
   useEffect(() => {
     const auth = getFirebaseAuth();

@@ -74,6 +74,9 @@ type StakeAction = {
 
 type PlacedBet = { type: BetType; selection?: number; selectionStr?: string; amount: number };
 
+/** Auto-hide transient errors (e.g. “Betting window ended”, “Insufficient balance”). */
+const ROULETTE_ERROR_DISMISS_MS = 6500;
+
 export function RouletteGameClient() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -104,6 +107,12 @@ export function RouletteGameClient() {
   const balanceAtLastBettingRef = useRef<number | null>(null);
   const winSoundRoundRef = useRef<string | null>(null);
   const { playSpin, playWin, playChip } = useRouletteSounds();
+
+  useEffect(() => {
+    if (err == null) return;
+    const t = window.setTimeout(() => setErr(null), ROULETTE_ERROR_DISMISS_MS);
+    return () => clearTimeout(t);
+  }, [err]);
 
   useEffect(() => {
     const auth = getFirebaseAuth();

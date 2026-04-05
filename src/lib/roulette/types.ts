@@ -2,6 +2,10 @@ export type RoulettePhase = "betting" | "result";
 
 export type BetType =
   | "straight"
+  | "split"
+  | "corner"
+  | "column"
+  | "dozen"
   | "red"
   | "black"
   | "even"
@@ -28,10 +32,56 @@ export interface PlaceBetPayload {
   roundId: string;
   bets: Array<{
     type: BetType;
-    /** For straight: 0–36; ignored for color/range bets */
+    /** straight, column (1–3), dozen (1–3) */
     selection?: number;
+    /** split "a-b", corner "a-b-c-d" (sorted ascending) */
+    selectionStr?: string;
     amount: number;
   }>;
+}
+
+/** Stable key for staging / aggregation (must match server document fields). */
+export function clientBetKey(
+  type: BetType,
+  selection?: number,
+  selectionStr?: string
+): string {
+  switch (type) {
+    case "straight":
+      return `s-${selection}`;
+    case "split":
+      return `split-${selectionStr}`;
+    case "corner":
+      return `corner-${selectionStr}`;
+    case "column":
+      return `col-${selection}`;
+    case "dozen":
+      return `dz-${selection}`;
+    default:
+      return type;
+  }
+}
+
+/** Human-readable label for history / admin. */
+export function formatBetLabel(p: {
+  type: BetType;
+  selection?: number | null;
+  selectionStr?: string | null;
+}): string {
+  switch (p.type) {
+    case "straight":
+      return `straight ${p.selection}`;
+    case "split":
+      return `split ${p.selectionStr ?? ""}`;
+    case "corner":
+      return `corner ${p.selectionStr ?? ""}`;
+    case "column":
+      return `column ${p.selection} (2:1)`;
+    case "dozen":
+      return `dozen ${p.selection} (${p.selection === 1 ? "1–12" : p.selection === 2 ? "13–24" : "25–36"})`;
+    default:
+      return p.type;
+  }
 }
 
 /** Quick-pick amounts in the UI (any ₹10 step is allowed via input). */

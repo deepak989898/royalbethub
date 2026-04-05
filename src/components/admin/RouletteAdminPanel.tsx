@@ -16,6 +16,7 @@ import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { roulettePatch, roulettePost } from "@/lib/roulette/client-api";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import type { BetType } from "@/lib/roulette/types";
+import { formatBetLabel } from "@/lib/roulette/types";
 
 type UserRow = { id: string; balance: number; blocked: boolean; email: string };
 
@@ -32,6 +33,7 @@ type BetRow = {
   userId: string;
   type: BetType;
   selection: number | null;
+  selectionStr?: string | null;
   amount: number;
 };
 
@@ -111,6 +113,10 @@ export function RouletteAdminPanel() {
           userId: String(x.userId),
           type: x.type as BetType,
           selection: x.selection != null ? Number(x.selection) : null,
+          selectionStr:
+            x.selectionStr != null && String(x.selectionStr).length > 0
+              ? String(x.selectionStr)
+              : null,
           amount: Number(x.amount) || 0,
         });
       });
@@ -327,7 +333,11 @@ export function RouletteAdminPanel() {
                   <tr key={b.id} className="border-b border-white/5">
                     <td className="px-4 py-2 font-mono text-xs text-zinc-400">{b.userId.slice(0, 10)}…</td>
                     <td className="px-4 py-2 text-zinc-200">
-                      {b.type === "straight" ? `straight ${b.selection}` : b.type}
+                      {formatBetLabel({
+                        type: b.type,
+                        selection: b.selection,
+                        selectionStr: b.selectionStr,
+                      })}
                     </td>
                     <td className="px-4 py-2 text-amber-200/90">{b.amount}</td>
                   </tr>

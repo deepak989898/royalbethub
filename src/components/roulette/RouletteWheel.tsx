@@ -14,10 +14,13 @@ export function RouletteWheel({
   winningNumber,
   spinTrigger,
   phase,
+  highlightWinner,
 }: {
   winningNumber: number | null;
   spinTrigger: number;
   phase: "betting" | "result";
+  /** When false during result, the wheel does not emphasize the winning pocket (ball still animates). */
+  highlightWinner: boolean;
 }) {
   const ballAngle = useMotionValue(0);
   const wheelRotation = useMotionValue(0);
@@ -75,7 +78,8 @@ export function RouletteWheel({
               const mid = (a0 + a1) / 2;
               const tx = Math.cos(mid) * (r * 0.72);
               const ty = Math.sin(mid) * (r * 0.72);
-              const isWin = phase === "result" && winningNumber != null && num === winningNumber;
+              const isWin =
+                highlightWinner && phase === "result" && winningNumber != null && num === winningNumber;
               return (
                 <g key={`${num}-${i}`}>
                   <path
@@ -132,7 +136,7 @@ export function RouletteWheel({
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
       </div>
 
-      {phase === "result" && winningNumber != null ? (
+      {phase === "result" && winningNumber != null && highlightWinner ? (
         <p className="mt-4 text-center text-sm text-zinc-400">
           Result:{" "}
           <span
@@ -147,6 +151,8 @@ export function RouletteWheel({
             {winningNumber}
           </span>
         </p>
+      ) : phase === "result" ? (
+        <p className="mt-4 text-center text-sm text-zinc-500">Spinning…</p>
       ) : (
         <p className="mt-4 text-center text-sm text-zinc-500">Place your bets — round is live</p>
       )}

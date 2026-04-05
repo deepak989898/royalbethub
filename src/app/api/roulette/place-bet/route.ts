@@ -7,7 +7,11 @@ import {
   jsonOk,
   requireUser,
 } from "@/lib/roulette/api-auth";
-import { validateStraightSelection } from "@/lib/roulette/engine";
+import {
+  validateColumnDozenSelection,
+  validateStraightSelection,
+} from "@/lib/roulette/engine";
+import { isValidCornerKey, isValidSplitKey } from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
 import { BET_STEP, isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
@@ -15,6 +19,10 @@ import type { RouletteStateDoc } from "@/lib/roulette/server-state";
 
 const ALLOWED_TYPES: BetType[] = [
   "straight",
+  "split",
+  "corner",
+  "column",
+  "dozen",
   "red",
   "black",
   "even",
@@ -32,7 +40,12 @@ export async function POST(request: Request) {
     const decoded = await requireUser(request);
     const body = (await request.json()) as {
       roundId?: string;
-      bets?: Array<{ type?: string; selection?: number; amount?: number }>;
+      bets?: Array<{
+        type?: string;
+        selection?: number;
+        selectionStr?: string;
+        amount?: number;
+      }>;
     };
     const roundId = body.roundId?.trim();
     const bets = body.bets;
@@ -49,6 +62,32 @@ export async function POST(request: Request) {
       }
       if (b.type === "straight" && !validateStraightSelection(b.selection)) {
         throw new ApiError(400, "Straight bet needs selection 0–36");
+      }
+      if (b.type === "split") {
+        const s = typeof b.selectionStr === "string" ? b.selectionStr.trim() : "";
+        if (!isValidSplitKey(s)) {
+          throw new ApiError(400, "Invalid split bet");
+        }
+      }
+      if (b.type === "corner") {
+        const s = typeof b.selectionStr === "string" ? b.selectionStr.trim() : "";
+        if (!isValidCornerKey(s)) {
+          throw new ApiError(400, "Invalid corner bet");
+        }
+      }
+      if (b.type === "column" && !validateColumnDozenSelection(b.selection)) {
+        throw new ApiError(400, "Column bet needs selection 1, 2, or 3");
+      }
+      if (b.type === "dozen" && !validateColumnDozenSelection(b.selection)) {
+        throw new ApiError(400, "Dozen bet needs selection 1, 2, or 3");
+      }
+      if (b.type === "split" || b.type === "corner") {
+        if (b.selection != null) {
+          throw new ApiError(400, "Split/corner bets use selectionStr only");
+        }
+      }
+      if ((b.type === "column" || b.type === "dozen") && b.selectionStr != null) {
+        throw new ApiError(400, "Column/dozen bets use selection only");
       }
       if (typeof b.amount !== "number" || !Number.isFinite(b.amount) || b.amount <= 0) {
         throw new ApiError(400, "Invalid amount");
@@ -86,11 +125,20 @@ export async function POST(request: Request) {
 
       for (const b of bets) {
         const betRef = db.collection("roulette_bets").doc();
+        const selection =
+          b.type === "straight" || b.type === "column" || b.type === "dozen"
+            ? b.selection
+            : null;
+        const selectionStr =
+          b.type === "split" || b.type === "corner"
+            ? String(b.selectionStr).trim()
+            : null;
         tx.set(betRef, {
           roundId,
           userId: decoded.uid,
           type: b.type,
-          selection: b.type === "straight" ? b.selection : null,
+          selection: selection ?? null,
+          selectionStr,
           amount: b.amount,
           createdAt: FieldValue.serverTimestamp(),
         });

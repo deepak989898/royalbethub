@@ -13,12 +13,14 @@ import {
 import Link from "next/link";
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import type { BetType } from "@/lib/roulette/types";
+import { formatBetLabel } from "@/lib/roulette/types";
 
 type BetRow = {
   id: string;
   roundId: string;
   type: BetType;
   selection: number | null;
+  selectionStr?: string | null;
   amount: number;
   createdAt?: Date;
 };
@@ -66,6 +68,10 @@ export function RouletteHistoryClient() {
             roundId: String(x.roundId),
             type: x.type as BetType,
             selection: x.selection != null ? Number(x.selection) : null,
+            selectionStr:
+              x.selectionStr != null && String(x.selectionStr).length > 0
+                ? String(x.selectionStr)
+                : null,
             amount: Number(x.amount) || 0,
             createdAt: x.createdAt?.toDate?.(),
           });
@@ -128,8 +134,11 @@ export function RouletteHistoryClient() {
   }
 
   function fmtBet(b: BetRow) {
-    if (b.type === "straight") return `${b.type} ${b.selection}`;
-    return b.type;
+    return formatBetLabel({
+      type: b.type,
+      selection: b.selection,
+      selectionStr: b.selectionStr,
+    });
   }
 
   return (

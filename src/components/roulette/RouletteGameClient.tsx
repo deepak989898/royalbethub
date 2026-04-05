@@ -11,12 +11,18 @@ import {
 } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
+import { SPIN_ANIMATION_MS } from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
-import { isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
+import {
+  clientBetKey,
+  isValidBetStake,
+  MAX_BET_AMOUNT,
+  MIN_BET_AMOUNT,
+} from "@/lib/roulette/types";
 import { roulettePost } from "@/lib/roulette/client-api";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import { BetAmountControl } from "./BetAmountControl";
-import { BettingTable } from "./BettingTable";
+import { BettingTable, type TableBetPayload } from "./BettingTable";
 import { RouletteWheel } from "./RouletteWheel";
 import { useRouletteSounds } from "./useRouletteSounds";
 
@@ -36,18 +42,20 @@ type GameState = {
 type LiveBet = {
   type: BetType;
   selection: number | null;
+  selectionStr?: string | null;
   amount: number;
   userId: string;
 };
 
-function betKey(type: BetType, selection?: number): string {
-  if (type === "straight") return `s-${selection}`;
-  return type;
-}
+type StakeAction = {
+  key: string;
+  type: BetType;
+  selection?: number;
+  selectionStr?: string;
+  amount: number;
+};
 
-type StakeAction = { key: string; type: BetType; selection?: number; amount: number };
-
-type PlacedBet = { type: BetType; selection?: number; amount: number };
+type PlacedBet = { type: BetType; selection?: number; selectionStr?: string; amount: number };
 
 export function RouletteGameClient() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
@@ -57,9 +65,10 @@ export function RouletteGameClient() {
   const [game, setGame] = useState<GameState | null>(null);
   const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
   const [betUnit, setBetUnit] = useState(50);
-  const [staged, setStaged] = useState<Map<string, { type: BetType; selection?: number; amount: number }>>(
-    () => new Map()
-  );
+  const [staged, setStaged] = useState<
+    Map<string, { type: BetType; selection?: number; selectionStr?: string; amount: number }>
+  >(() => new Map());
+  const [spinComplete, setSpinComplete] = useState(false);
   const [undoStack, setUndoStack] = useState<StakeAction[]>([]);
   const lastPlacedRef = useRef<PlacedBet[]>([]);
   const [canRebet, setCanRebet] = useState(false);
@@ -145,6 +154,10 @@ export function RouletteGameClient() {
         rows.push({
           type: x.type as BetType,
           selection: x.selection != null ? Number(x.selection) : null,
+          selectionStr:
+            x.selectionStr != null && String(x.selectionStr).length > 0
+              ? String(x.selectionStr)
+              : null,
           amount: Number(x.amount) || 0,
           userId: String(x.userId),
         });
@@ -181,6 +194,24 @@ export function RouletteGameClient() {
     }
     prevPhase.current = game.phase;
   }, [game, playSpin]);
+
+  useEffect(() => {
+    if (game?.phase !== "result") {
+      setSpinComplete(false);
+      return;
+    }
+    if (game.winningNumber == null) {
+      setSpinComplete(false);
+      return;
+    }
+    if (spinRev === 0) {
+      setSpinComplete(true);
+      return;
+    }
+    setSpinComplete(false);
+    const t = window.setTimeout(() => setSpinComplete(true), SPIN_ANIMATION_MS);
+    return () => clearTimeout(t);
+  }, [game?.phase, game?.winningNumber, spinRev]);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
@@ -274,6 +305,7 @@ export function RouletteGameClient() {
           next.set(last.key, {
             type: last.type,
             selection: last.selection,
+            selectionStr: last.selectionStr,
             amount: na,
           });
         return next;
@@ -300,12 +332,17 @@ export function RouletteGameClient() {
       return;
     }
     setErr(null);
-    const m = new Map<string, { type: BetType; selection?: number; amount: number }>();
+    const m = new Map<
+      string,
+      { type: BetType; selection?: number; selectionStr?: string; amount: number }
+    >();
     for (const b of list) {
-      const k = betKey(b.type, b.selection);
+      const k = clientBetKey(b.type, b.selection, b.selectionStr);
       m.set(k, {
         type: b.type,
-        selection: b.type === "straight" ? b.selection : undefined,
+        selection:
+          b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
+        selectionStr: b.type === "split" || b.type === "corner" ? b.selectionStr : undefined,
         amount: b.amount,
       });
     }
@@ -328,6 +365,13 @@ export function RouletteGameClient() {
 
   const stagedKeys = useMemo(() => new Set(staged.keys()), [staged]);
 
+  const displayedRecents = useMemo(() => {
+    if (!game || game.recentResults.length === 0) return [];
+    if (game.phase === "betting") return game.recentResults;
+    if (!spinComplete) return game.recentResults.slice(1);
+    return game.recentResults;
+  }, [game?.recentResults, game?.phase, spinComplete]);
+
   const totalStaged = useMemo(() => {
     let s = 0;
     staged.forEach((v) => {
@@ -336,21 +380,33 @@ export function RouletteGameClient() {
     return s;
   }, [staged]);
 
-  const onCellClick = useCallback(
-    (type: BetType, selection?: number) => {
+  const onBet = useCallback(
+    (p: TableBetPayload) => {
       if (!user || blocked || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
         return;
       }
       if (!isValidBetStake(betUnit)) return;
-      const k = betKey(type, selection);
+      const k = clientBetKey(p.type, p.selection, p.selectionStr);
       const add = betUnit;
-      setUndoStack((prev) => [...prev, { key: k, type, selection: type === "straight" ? selection : undefined, amount: add }]);
+      setUndoStack((prev) => [
+        ...prev,
+        {
+          key: k,
+          type: p.type,
+          selection:
+            p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
+          selectionStr: p.type === "split" || p.type === "corner" ? p.selectionStr : undefined,
+          amount: add,
+        },
+      ]);
       setStaged((prev) => {
         const next = new Map(prev);
         const cur = next.get(k);
         next.set(k, {
-          type,
-          selection: type === "straight" ? selection : undefined,
+          type: p.type,
+          selection:
+            p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
+          selectionStr: p.type === "split" || p.type === "corner" ? p.selectionStr : undefined,
           amount: (cur?.amount || 0) + add,
         });
         return next;
@@ -365,7 +421,9 @@ export function RouletteGameClient() {
     setErr(null);
     const bets = [...staged.values()].map((b) => ({
       type: b.type,
-      selection: b.type === "straight" ? b.selection : undefined,
+      selection:
+        b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
+      selectionStr: b.type === "split" || b.type === "corner" ? b.selectionStr : undefined,
       amount: b.amount,
     }));
     for (const b of bets) {
@@ -475,13 +533,14 @@ export function RouletteGameClient() {
             winningNumber={game?.winningNumber ?? null}
             spinTrigger={spinRev}
             phase={game?.phase ?? "betting"}
+            highlightWinner={game?.phase === "result" && spinComplete}
           />
 
-          {game && game.recentResults.length > 0 ? (
+          {game && displayedRecents.length > 0 ? (
             <div className="rounded-xl border border-zinc-800 bg-black/40 px-3 py-2">
               <p className="mb-2 text-xs uppercase tracking-wider text-zinc-500">Recent numbers</p>
               <div className="flex flex-wrap gap-1">
-                {game.recentResults.slice(0, 12).map((n, i) => (
+                {displayedRecents.slice(0, 12).map((n, i) => (
                   <span
                     key={`${n}-${i}`}
                     className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 px-2 text-xs font-bold text-zinc-200"
@@ -510,7 +569,7 @@ export function RouletteGameClient() {
             ) : null}
           </p>
           <BettingTable
-            onCellClick={onCellClick}
+            onBet={onBet}
             disabled={
               game?.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt || blocked
             }

@@ -11,6 +11,7 @@ interface BetDoc {
   userId: string;
   type: BetType;
   selection: number | null;
+  selectionStr: string | null;
   amount: number;
 }
 
@@ -50,6 +51,10 @@ export async function POST() {
         userId: x.userId as string,
         type: x.type as BetType,
         selection: x.selection as number | null,
+        selectionStr:
+          x.selectionStr != null && String(x.selectionStr).length > 0
+            ? String(x.selectionStr)
+            : null,
         amount: Number(x.amount) || 0,
       };
     });
@@ -57,6 +62,7 @@ export async function POST() {
     const engineBets: BetForEngine[] = bets.map((b) => ({
       type: b.type,
       selection: b.selection ?? undefined,
+      selectionStr: b.selectionStr ?? undefined,
       amount: b.amount,
     }));
 
@@ -79,6 +85,7 @@ export async function POST() {
       const pay = payoutForBet(winning, {
         type: b.type,
         selection: b.selection ?? undefined,
+        selectionStr: b.selectionStr ?? undefined,
         amount: b.amount,
       });
       if (pay > 0) {

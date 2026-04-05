@@ -1,10 +1,27 @@
 import { randomInt } from "node:crypto";
-import { evenMoneyMultiplier, isBlack, isRed, straightMultiplier } from "./constants";
+import {
+  columnDozenMultiplier,
+  cornerMultiplier,
+  evenMoneyMultiplier,
+  isBlack,
+  isRed,
+  splitMultiplier,
+  straightMultiplier,
+} from "./constants";
+import {
+  columnIndex,
+  dozenIndex,
+  isValidCornerKey,
+  isValidSplitKey,
+  normalizeSplitKey,
+  parseSplitKey,
+} from "./table-layout";
 import type { BetType } from "./types";
 
 export interface BetForEngine {
   type: BetType;
   selection?: number;
+  selectionStr?: string;
   amount: number;
 }
 
@@ -16,6 +33,32 @@ export function payoutForBet(result: number, bet: BetForEngine): number {
       const n = bet.selection ?? -1;
       if (n === result) return stake * (1 + straightMultiplier());
       return 0;
+    }
+    case "split": {
+      const key = bet.selectionStr;
+      if (!key || !isValidSplitKey(key)) return 0;
+      const p = parseSplitKey(key)!;
+      const norm = normalizeSplitKey(p[0], p[1]);
+      if (norm !== key) return 0;
+      return result === p[0] || result === p[1] ? stake * (1 + splitMultiplier()) : 0;
+    }
+    case "corner": {
+      const key = bet.selectionStr;
+      if (!key || !isValidCornerKey(key)) return 0;
+      const nums = key.split("-").map((s) => parseInt(s, 10));
+      return nums.includes(result) ? stake * (1 + cornerMultiplier()) : 0;
+    }
+    case "column": {
+      const col = bet.selection;
+      if (col !== 1 && col !== 2 && col !== 3) return 0;
+      if (result === 0) return 0;
+      return columnIndex(result) === col ? stake * (1 + columnDozenMultiplier()) : 0;
+    }
+    case "dozen": {
+      const dz = bet.selection;
+      if (dz !== 1 && dz !== 2 && dz !== 3) return 0;
+      if (result === 0) return 0;
+      return dozenIndex(result) === dz ? stake * (1 + columnDozenMultiplier()) : 0;
     }
     case "red":
       return isRed(result) ? stake * evenMoneyMultiplier() : 0;
@@ -66,4 +109,8 @@ export function pickMinPayoutNumber(bets: BetForEngine[]): number {
 
 export function validateStraightSelection(n: unknown): n is number {
   return typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 36;
+}
+
+export function validateColumnDozenSelection(n: unknown): n is 1 | 2 | 3 {
+  return n === 1 || n === 2 || n === 3;
 }

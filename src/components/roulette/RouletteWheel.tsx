@@ -82,7 +82,7 @@ export function RouletteWheel({
   }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[min(100%,300px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
+    <div className="relative flex w-full max-w-[min(100%,300px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
       <div className="mb-0.5 flex min-h-[2.75rem] w-full flex-col items-center justify-center md:min-h-[3rem]">
         <AnimatePresence>
           {showWinOverlay && winningNumber != null ? (

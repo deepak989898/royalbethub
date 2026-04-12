@@ -324,8 +324,7 @@ export function RouletteGameClient() {
       type: p.type,
       selection:
         p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
-      selectionStr:
-        p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
+      selectionStr: p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
       amount,
     };
   }
@@ -351,8 +350,7 @@ export function RouletteGameClient() {
       type: b.type,
       selection:
         b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
-      selectionStr:
-        b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
+      selectionStr: b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
       amount: b.amount,
     }));
     for (const b of bets) {
@@ -504,10 +502,7 @@ export function RouletteGameClient() {
             line.type === "straight" || line.type === "column" || line.type === "dozen"
               ? line.selection
               : undefined,
-          selectionStr:
-            line.type === "split" || line.type === "corner" || line.type === "street"
-              ? line.selectionStr
-              : undefined,
+          selectionStr: line.type === "corner" || line.type === "street" ? line.selectionStr : undefined,
           amount: line.amount,
         },
       ];
@@ -624,7 +619,7 @@ export function RouletteGameClient() {
   );
 
   return (
-    <div className="space-y-1 sm:space-y-4 lg:space-y-8">
+    <div className="space-y-1 sm:space-y-2 lg:space-y-3">
       {activityToasts.length > 0 ? (
         <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex max-w-[min(92vw,22rem)] -translate-x-1/2 flex-col gap-1.5 lg:bottom-6 lg:max-w-[min(90vw,24rem)] lg:gap-2">
           {activityToasts.map((t) => (
@@ -643,9 +638,9 @@ export function RouletteGameClient() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-1 sm:gap-3 lg:flex-row lg:items-start lg:gap-6">
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-1 sm:gap-3 lg:gap-4">
-          <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-2 sm:gap-2 lg:flex-row lg:items-start lg:gap-[10px]">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
               <div className="min-w-0">
                 <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>

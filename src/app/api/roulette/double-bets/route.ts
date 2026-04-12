@@ -93,7 +93,7 @@ export async function POST(request: Request) {
               : null
             : null;
         const selectionStr =
-          x.type === "split" || x.type === "corner" || x.type === "street"
+          x.type === "corner" || x.type === "street"
             ? x.selectionStr != null && String(x.selectionStr).length > 0
               ? String(x.selectionStr)
               : null

@@ -4,19 +4,10 @@ import {
   evenMoneyMultiplier,
   isBlack,
   isRed,
-  splitMultiplier,
   straightMultiplier,
   streetMultiplier,
 } from "./constants";
-import {
-  columnIndex,
-  dozenIndex,
-  isValidCornerKey,
-  isValidSplitKey,
-  isValidStreetKey,
-  normalizeSplitKey,
-  parseSplitKey,
-} from "./table-layout";
+import { columnIndex, dozenIndex, isValidCornerKey, isValidStreetKey } from "./table-layout";
 import type { BetType } from "./types";
 
 export interface BetForEngine {
@@ -34,14 +25,6 @@ export function payoutForBet(result: number, bet: BetForEngine): number {
       const n = bet.selection ?? -1;
       if (n === result) return stake * (1 + straightMultiplier());
       return 0;
-    }
-    case "split": {
-      const key = bet.selectionStr;
-      if (!key || !isValidSplitKey(key)) return 0;
-      const p = parseSplitKey(key)!;
-      const norm = normalizeSplitKey(p[0], p[1]);
-      if (norm !== key) return 0;
-      return result === p[0] || result === p[1] ? stake * (1 + splitMultiplier()) : 0;
     }
     case "corner": {
       const key = bet.selectionStr;

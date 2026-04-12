@@ -15,40 +15,6 @@ export function numToRC(n: number): { r: number; c: number } | null {
   return { r, c };
 }
 
-/** Sorted "a-b" with a<b, or null if not adjacent (incl. 0–1, 0–2, 0–3). */
-export function normalizeSplitKey(a: number, b: number): string | null {
-  let x = a;
-  let y = b;
-  if (x > y) [x, y] = [y, x];
-  if (x < 0 || y > 36 || x === y) return null;
-  if (x === 0) {
-    if (y === 1 || y === 2 || y === 3) return `0-${y}`;
-    return null;
-  }
-  const ra = numToRC(x);
-  const rb = numToRC(y);
-  if (!ra || !rb) return null;
-  const horiz = ra.r === rb.r && Math.abs(ra.c - rb.c) === 1;
-  const vert = ra.c === rb.c && Math.abs(ra.r - rb.r) === 1;
-  if (horiz || vert) return `${x}-${y}`;
-  return null;
-}
-
-export function parseSplitKey(key: string): [number, number] | null {
-  const m = /^(\d+)-(\d+)$/.exec(key.trim());
-  if (!m) return null;
-  const a = parseInt(m[1]!, 10);
-  const b = parseInt(m[2]!, 10);
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return [a, b];
-}
-
-export function isValidSplitKey(key: string): boolean {
-  const p = parseSplitKey(key);
-  if (!p) return false;
-  return normalizeSplitKey(p[0], p[1]) === key;
-}
-
 /** 2×2 block top-left (r,c); r∈{0,1}, c∈{0..10} */
 export function cornerKeyFromRC(r: number, c: number): string | null {
   if (r < 0 || r > 1 || c < 0 || c > 10) return null;

@@ -25,11 +25,6 @@ export function evenMoneyMultiplier(): number {
   return 2;
 }
 
-/** 17:1 payout → total return multiplier on stake is 18. */
-export function splitMultiplier(): number {
-  return 17;
-}
-
 /** 8:1 → return ×9. */
 export function cornerMultiplier(): number {
   return 8;

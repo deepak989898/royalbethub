@@ -53,14 +53,12 @@ function rcToNum(r: 0 | 1 | 2, c: number) {
 type CellVisual = {
   ring: boolean;
   straightTotal: number;
-  /** Split only: full line stake on the top chip row on each covered number. */
-  compoundTopStakes: Array<{ key: string; amt: number }>;
 };
 
 function buildInsideCellVisual(totals: Map<string, number>): Map<number, CellVisual> {
   const byN = new Map<number, CellVisual>();
   for (let n = 0; n <= 36; n++) {
-    byN.set(n, { ring: false, straightTotal: 0, compoundTopStakes: [] });
+    byN.set(n, { ring: false, straightTotal: 0 });
   }
 
   const markRingForKey = (key: string) => {
@@ -89,17 +87,6 @@ function buildInsideCellVisual(totals: Map<string, number>): Map<number, CellVis
       for (const n of nums) {
         const c = byN.get(n);
         if (c) c.ring = true;
-      }
-      continue;
-    }
-    if (k.startsWith("split-")) {
-      const nums = numbersInBetTotalKey(k);
-      if (!nums) continue;
-      for (const n of nums) {
-        const c = byN.get(n);
-        if (!c) continue;
-        c.ring = true;
-        c.compoundTopStakes.push({ key: k, amt });
       }
       continue;
     }
@@ -136,7 +123,7 @@ function NumberCell({
   const straightChip = vis.straightTotal || totals.get(sk) || 0;
 
   return (
-    <div className="relative min-h-[1.55rem] min-w-0 flex-1 sm:min-h-[1.75rem] lg:min-h-[2.45rem]">
+    <div className="relative min-h-[1.45rem] min-w-0 flex-1 sm:min-h-[1.6rem] lg:min-h-[2.35rem]">
       <button
         type="button"
         disabled={disabled}
@@ -144,24 +131,11 @@ function NumberCell({
           const { x, y } = normClick(e);
           onBet(resolveNumberCellClick(r, c, x, y));
         }}
-        className={`relative flex h-full min-h-[1.55rem] w-full flex-col items-center justify-center rounded border px-px pb-3 pt-3 text-[9px] font-semibold transition sm:min-h-[1.75rem] sm:text-[10px] lg:min-h-[2.45rem] lg:pb-3.5 lg:pt-3.5 lg:text-xs ${
+        className={`relative flex h-full min-h-[1.45rem] w-full items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.35rem] lg:text-xs ${
           disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98] touch-manipulation"
         } ${bg} ${vis.ring ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
       >
-        {vis.compoundTopStakes.length > 0 ? (
-          <div className="pointer-events-none absolute left-0 right-0 top-0.5 flex max-h-[42%] flex-col items-center gap-0 overflow-hidden px-0.5 lg:top-1">
-            {vis.compoundTopStakes.map((row) => (
-              <span
-                key={`${n}-${row.key}`}
-                className="w-full truncate text-center text-[6px] font-black tabular-nums leading-tight text-amber-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] sm:text-[7px] lg:text-[8px]"
-                title={`Split stake · ₹${row.amt.toLocaleString("en-IN")}`}
-              >
-                ₹{row.amt.toLocaleString("en-IN")}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <span className="z-[1] leading-none">{n}</span>
+        <span className="leading-none">{n}</span>
         {straightChip > 0 ? (
           <span className="absolute bottom-px text-[6px] font-bold tabular-nums text-amber-300 lg:bottom-0.5 lg:text-[8px]">
             ₹{straightChip.toLocaleString("en-IN")}
@@ -212,18 +186,6 @@ export function BettingTable({
             disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98] touch-manipulation"
           } ${zeroActive ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
         >
-          {zeroVis.compoundTopStakes.length > 0 ? (
-            <div className="pointer-events-none absolute left-0 right-0 top-1 flex max-h-[36%] flex-col items-center gap-0 overflow-hidden px-0.5 sm:top-1.5 lg:top-2">
-              {zeroVis.compoundTopStakes.map((row) => (
-                <span
-                  key={`0-${row.key}`}
-                  className="w-full truncate text-center text-[6px] font-black tabular-nums text-amber-100 sm:text-[7px] lg:text-[8px]"
-                >
-                  ₹{row.amt.toLocaleString("en-IN")}
-                </span>
-              ))}
-            </div>
-          ) : null}
           <span className="z-[1] leading-none">0</span>
           {zeroHasStake ? (
             <span className="absolute bottom-0.5 text-[7px] font-bold tabular-nums text-amber-300 lg:text-[9px]">

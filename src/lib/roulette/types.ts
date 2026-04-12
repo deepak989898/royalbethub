@@ -2,7 +2,6 @@ export type RoulettePhase = "betting" | "result";
 
 export type BetType =
   | "straight"
-  | "split"
   | "corner"
   | "street"
   | "column"
@@ -45,7 +44,7 @@ export interface PlaceBetPayload {
     type: BetType;
     /** straight, column (1–3), dozen (1–3) */
     selection?: number;
-    /** split "a-b", corner "a-b-c-d" (sorted ascending) */
+    /** corner "a-b-c-d" (sorted ascending) */
     selectionStr?: string;
     amount: number;
   }>;
@@ -60,8 +59,6 @@ export function clientBetKey(
   switch (type) {
     case "straight":
       return `s-${selection}`;
-    case "split":
-      return `split-${selectionStr}`;
     case "corner":
       return `corner-${selectionStr}`;
     case "street":
@@ -84,8 +81,6 @@ export function formatBetLabel(p: {
   switch (p.type) {
     case "straight":
       return `straight ${p.selection}`;
-    case "split":
-      return `split ${p.selectionStr ?? ""}`;
     case "corner":
       return `corner ${p.selectionStr ?? ""}`;
     case "street":

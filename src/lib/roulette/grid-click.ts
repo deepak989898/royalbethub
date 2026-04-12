@@ -1,6 +1,5 @@
 import {
   cornerKeyFromRC,
-  normalizeSplitKey,
   rcToNum,
   streetKeyFromCol,
 } from "./table-layout";
@@ -17,12 +16,6 @@ const CORNER = 0.2;
 const EDGE = 0.18;
 /** Bottom band on the lowest row of numbers → street (three in column). */
 const STREET_Y = 0.82;
-
-function splitOrNull(a: number, b: number): GridClickBet | null {
-  const key = normalizeSplitKey(a, b);
-  if (!key) return null;
-  return { type: "split", selectionStr: key };
-}
 
 /**
  * Click inside a number cell (r,c). (x,y) are normalized to [0,1] within the cell
@@ -64,21 +57,18 @@ export function resolveNumberCellClick(
     if (sk) return { type: "street", selectionStr: sk };
   }
 
+  /** Former split zones → straight on the number in this cell. */
   if (y < EDGE && r > 0 && x >= CORNER && x <= 1 - CORNER) {
-    const s = splitOrNull(rcToNum((r - 1) as 0 | 1 | 2, c), n);
-    if (s) return s;
+    return { type: "straight", selection: n };
   }
   if (y > 1 - EDGE && r < 2 && x >= CORNER && x <= 1 - CORNER) {
-    const s = splitOrNull(n, rcToNum((r + 1) as 0 | 1 | 2, c));
-    if (s) return s;
+    return { type: "straight", selection: n };
   }
   if (x < EDGE && c > 0 && y >= CORNER && y <= 1 - CORNER) {
-    const s = splitOrNull(rcToNum(r, c - 1), n);
-    if (s) return s;
+    return { type: "straight", selection: n };
   }
   if (x > 1 - EDGE && c < 11 && y >= CORNER && y <= 1 - CORNER) {
-    const s = splitOrNull(n, rcToNum(r, c + 1));
-    if (s) return s;
+    return { type: "straight", selection: n };
   }
 
   return { type: "straight", selection: n };
@@ -87,9 +77,9 @@ export function resolveNumberCellClick(
 /** Click on the zero cell; x,y normalized in [0,1] (left→right, top→bottom). */
 export function resolveZeroCellClick(x: number, y: number): GridClickBet {
   if (x > 0.62) {
-    if (y < 0.34) return { type: "split", selectionStr: "0-3" };
-    if (y < 0.67) return { type: "split", selectionStr: "0-2" };
-    return { type: "split", selectionStr: "0-1" };
+    if (y < 0.34) return { type: "straight", selection: 3 };
+    if (y < 0.67) return { type: "straight", selection: 2 };
+    return { type: "straight", selection: 1 };
   }
   return { type: "straight", selection: 0 };
 }

@@ -53,7 +53,7 @@ function rcToNum(r: 0 | 1 | 2, c: number) {
 type CellVisual = {
   ring: boolean;
   straightTotal: number;
-  /** Split / corner / street: full line stake shown above the number on each covered cell. */
+  /** Split only: full line stake on the top chip row on each covered number. */
   compoundTopStakes: Array<{ key: string; amt: number }>;
 };
 
@@ -83,7 +83,16 @@ function buildInsideCellVisual(totals: Map<string, number>): Map<number, CellVis
       }
       continue;
     }
-    if (k.startsWith("split-") || k.startsWith("corner-") || k.startsWith("street-")) {
+    if (k.startsWith("corner-") || k.startsWith("street-")) {
+      const nums = numbersInBetTotalKey(k);
+      if (!nums) continue;
+      for (const n of nums) {
+        const c = byN.get(n);
+        if (c) c.ring = true;
+      }
+      continue;
+    }
+    if (k.startsWith("split-")) {
       const nums = numbersInBetTotalKey(k);
       if (!nums) continue;
       for (const n of nums) {
@@ -145,7 +154,7 @@ function NumberCell({
               <span
                 key={`${n}-${row.key}`}
                 className="w-full truncate text-center text-[6px] font-black tabular-nums leading-tight text-amber-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] sm:text-[7px] lg:text-[8px]"
-                title={`Stake on this line · ₹${row.amt.toLocaleString("en-IN")}`}
+                title={`Split stake · ₹${row.amt.toLocaleString("en-IN")}`}
               >
                 ₹{row.amt.toLocaleString("en-IN")}
               </span>

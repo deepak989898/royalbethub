@@ -3,6 +3,7 @@
 import type React from "react";
 import { useMemo } from "react";
 import { colorOf } from "@/lib/roulette/constants";
+import { labelForCompoundTotalKey, numbersInBetTotalKey } from "@/lib/roulette/bet-table-keys";
 import { resolveNumberCellClick, resolveZeroCellClick } from "@/lib/roulette/grid-click";
 import type { BetType } from "@/lib/roulette/types";
 import { clientBetKey } from "@/lib/roulette/types";
@@ -49,19 +50,75 @@ function rcToNum(r: 0 | 1 | 2, c: number) {
   return (3 - r) + 3 * c;
 }
 
+type CellVisual = {
+  ring: boolean;
+  straightTotal: number;
+  compoundLines: Array<{ key: string; label: string; amt: number }>;
+};
+
+function buildInsideCellVisual(
+  totals: Map<string, number>,
+  stagedKeys: Set<string>
+): Map<number, CellVisual> {
+  const byN = new Map<number, CellVisual>();
+  for (let n = 0; n <= 36; n++) {
+    byN.set(n, { ring: false, straightTotal: 0, compoundLines: [] });
+  }
+
+  const markRingForKey = (key: string) => {
+    const nums = numbersInBetTotalKey(key);
+    if (!nums) return;
+    for (const n of nums) {
+      const c = byN.get(n);
+      if (c) c.ring = true;
+    }
+  };
+
+  for (const k of stagedKeys) {
+    markRingForKey(k);
+  }
+
+  for (const [k, amt] of totals) {
+    if (!amt) continue;
+    if (k.startsWith("s-")) {
+      const v = parseInt(k.slice(2), 10);
+      if (!Number.isNaN(v) && v >= 0 && v <= 36) {
+        const c = byN.get(v)!;
+        c.straightTotal += amt;
+        c.ring = true;
+      }
+      continue;
+    }
+    const nums = numbersInBetTotalKey(k);
+    const lbl = labelForCompoundTotalKey(k);
+    if (!nums || !lbl) {
+      markRingForKey(k);
+      continue;
+    }
+    for (const n of nums) {
+      const c = byN.get(n);
+      if (!c) continue;
+      c.ring = true;
+      c.compoundLines.push({ key: k, label: lbl, amt });
+    }
+  }
+
+  return byN;
+}
+
 function NumberCell({
   r,
   c,
   disabled,
-  stagedKeys,
   totals,
+  cellVisual,
   onBet,
 }: {
   r: 0 | 1 | 2;
   c: number;
   disabled: boolean;
-  stagedKeys: Set<string>;
   totals: Map<string, number>;
+  cellVisual: Map<number, CellVisual>;
   onBet: (p: TableBetPayload) => void;
 }) {
   const n = rcToNum(r, c);
@@ -72,6 +129,9 @@ function NumberCell({
       ? "bg-red-800 border-red-600 text-white"
       : "bg-zinc-900 border-zinc-600 text-zinc-100";
 
+  const vis = cellVisual.get(n)!;
+  const straightChip = vis.straightTotal || totals.get(sk) || 0;
+
   return (
     <div className="relative min-h-[1.45rem] min-w-0 flex-1 sm:min-h-[1.6rem] lg:min-h-[2.35rem]">
       <button
@@ -81,15 +141,28 @@ function NumberCell({
           const { x, y } = normClick(e);
           onBet(resolveNumberCellClick(r, c, x, y));
         }}
-        className={`relative flex h-full min-h-[1.45rem] w-full items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.35rem] lg:text-xs ${
-          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
-        } ${bg} ${stagedKeys.has(sk) ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
+        className={`relative flex h-full min-h-[1.45rem] w-full flex-col items-center justify-center gap-0 rounded border px-px py-0.5 text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.35rem] lg:text-xs ${
+          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98] touch-manipulation"
+        } ${bg} ${vis.ring ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`}
       >
-        {n}
-        {totals.get(sk) ? (
-          <span className="absolute bottom-px text-[6px] text-amber-300 lg:bottom-0.5 lg:text-[8px]">
-            ₹{totals.get(sk)}
+        <span className="leading-none">{n}</span>
+        {straightChip > 0 ? (
+          <span className="absolute bottom-px text-[6px] font-bold tabular-nums text-amber-300 lg:bottom-0.5 lg:text-[8px]">
+            ₹{straightChip}
           </span>
+        ) : null}
+        {vis.compoundLines.length > 0 ? (
+          <div className="pointer-events-none absolute left-0 right-0 top-px flex max-h-[46%] flex-col items-center gap-0 overflow-hidden px-0.5 lg:top-0.5 lg:max-h-[48%]">
+            {vis.compoundLines.map((line) => (
+              <span
+                key={`${n}-${line.key}`}
+                className="w-full truncate text-center text-[5px] font-semibold leading-tight text-cyan-200/95 tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.85)] sm:text-[6px] lg:text-[7px]"
+                title={`${line.label} · ₹${line.amt}`}
+              >
+                {line.label} ₹{line.amt}
+              </span>
+            ))}
+          </div>
         ) : null}
       </button>
     </div>
@@ -124,14 +197,17 @@ export function BettingTable({
     return m;
   }, [liveBets, stagedBets]);
 
+  const cellVisual = useMemo(() => buildInsideCellVisual(totals, stagedKeys), [totals, stagedKeys]);
+
   function cellClass(base: string, active: boolean) {
     return `${base} relative flex min-h-[1.45rem] items-center justify-center rounded border text-[9px] font-semibold transition sm:min-h-[1.6rem] sm:text-[10px] lg:min-h-[2.25rem] lg:rounded-md lg:text-xs ${
-      disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98]"
+      disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:brightness-110 active:scale-[0.98] touch-manipulation"
     } ${active ? "ring-1 ring-amber-400 ring-offset-0 ring-offset-black lg:ring-2 lg:ring-offset-1" : ""}`;
   }
 
   const zeroKey = clientBetKey("straight", 0);
   const colKeys = [3, 2, 1] as const;
+  const zeroVis = cellVisual.get(0)!;
 
   return (
     <div className="w-full space-y-0.5 overflow-x-auto pb-0 sm:space-y-1.5 sm:pb-1 lg:space-y-2 lg:pb-2">
@@ -144,13 +220,25 @@ export function BettingTable({
             onBet(resolveZeroCellClick(x, y));
           }}
           className={cellClass(
-            "relative flex w-7 shrink-0 flex-col items-center justify-center rounded border border-emerald-700 bg-emerald-800 py-4 text-[10px] text-white sm:w-8 sm:rounded-md sm:py-5 sm:text-[11px] lg:w-11 lg:rounded-lg lg:py-8 lg:text-sm",
-            stagedKeys.has(zeroKey)
+            "relative flex w-7 shrink-0 flex-col items-center justify-center gap-0 rounded border border-emerald-700 bg-emerald-800 py-4 text-[10px] text-white sm:w-8 sm:rounded-md sm:py-5 sm:text-[11px] lg:w-11 lg:rounded-lg lg:py-8 lg:text-sm",
+            zeroVis.ring || stagedKeys.has(zeroKey)
           )}
         >
-          0
+          <span className="z-[1] leading-none">0</span>
+          {zeroVis.compoundLines.length > 0 ? (
+            <div className="pointer-events-none absolute left-0 right-0 top-1 flex max-h-[38%] flex-col items-center gap-0 overflow-hidden px-0.5 sm:top-1.5 lg:top-2">
+              {zeroVis.compoundLines.map((line) => (
+                <span
+                  key={`0-${line.key}`}
+                  className="w-full truncate text-center text-[5px] font-semibold leading-tight text-cyan-200/95 tabular-nums sm:text-[6px] lg:text-[7px]"
+                >
+                  {line.label} ₹{line.amt}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {totals.get(zeroKey) ? (
-            <span className="absolute bottom-0.5 text-[7px] text-amber-300 lg:text-[9px]">
+            <span className="absolute bottom-0.5 text-[7px] font-bold tabular-nums text-amber-300 lg:text-[9px]">
               ₹{totals.get(zeroKey)}
             </span>
           ) : null}
@@ -165,8 +253,8 @@ export function BettingTable({
                   r={r}
                   c={c}
                   disabled={disabled}
-                  stagedKeys={stagedKeys}
                   totals={totals}
+                  cellVisual={cellVisual}
                   onBet={onBet}
                 />
               ))}

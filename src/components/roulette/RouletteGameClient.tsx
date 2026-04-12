@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -91,7 +91,11 @@ export function RouletteGameClient() {
   const [spinComplete, setSpinComplete] = useState(false);
   const [undoStack, setUndoStack] = useState<StakeAction[]>([]);
   const lastPlacedRef = useRef<PlacedBet[]>([]);
+  /** Latest confirmed stake sum from Firestore (updated every render for place/double timing). */
+  const userStakeSnapRef = useRef(0);
   const [canRebet, setCanRebet] = useState(false);
+  /** After Place bets, expected min stake until `liveBets` snapshot catches up (keeps Double / “Your bet” responsive). */
+  const [pendingExpectedMyStake, setPendingExpectedMyStake] = useState<number | null>(null);
   const [activityToasts, setActivityToasts] = useState<{ id: string; text: string }[]>([]);
   const [placing, setPlacing] = useState(false);
   const [doubling, setDoubling] = useState(false);
@@ -316,6 +320,7 @@ export function RouletteGameClient() {
   useEffect(() => {
     setStaged(new Map());
     setUndoStack([]);
+    setPendingExpectedMyStake(null);
   }, [game?.roundId]);
 
   function pushActivityToast(text: string) {
@@ -461,16 +466,33 @@ export function RouletteGameClient() {
     return s;
   }, [staged]);
 
-  /** Confirmed stakes for this user in the current round (Firestore), not chips on the felt. */
-  const userPlacedStakeTotal = useMemo(() => {
-    if (!user) return 0;
-    let s = 0;
-    for (const b of liveBets) {
-      if (b.userId !== user.uid) continue;
-      s += b.amount;
-    }
-    return s;
+  /** This user’s bets in the current round (table + totals are per-viewer; payouts still use full `liveBets`). */
+  const myRoundBets = useMemo(() => {
+    if (!user) return [];
+    return liveBets.filter((b) => b.userId === user.uid);
   }, [user, liveBets]);
+
+  /** Confirmed stakes for this user in the current round (Firestore), not chips on the felt. */
+  const userPlacedStakeTotal = useMemo(
+    () => myRoundBets.reduce((s, b) => s + b.amount, 0),
+    [myRoundBets]
+  );
+
+  useLayoutEffect(() => {
+    userStakeSnapRef.current = userPlacedStakeTotal;
+  }, [userPlacedStakeTotal]);
+
+  useEffect(() => {
+    if (pendingExpectedMyStake == null) return;
+    if (userPlacedStakeTotal >= pendingExpectedMyStake) {
+      setPendingExpectedMyStake(null);
+    }
+  }, [userPlacedStakeTotal, pendingExpectedMyStake]);
+
+  const displayMyPlacedStake = useMemo(() => {
+    if (pendingExpectedMyStake == null) return userPlacedStakeTotal;
+    return Math.max(userPlacedStakeTotal, pendingExpectedMyStake);
+  }, [userPlacedStakeTotal, pendingExpectedMyStake]);
 
   /** Wallet header: during betting with staged lines, show what is left after those bets (not yet placed). */
   const headerBalance = useMemo(() => {
@@ -526,7 +548,14 @@ export function RouletteGameClient() {
   );
 
   async function doubleMyBets() {
-    if (!user || !token || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
+    if (
+      !user ||
+      !token ||
+      !game ||
+      game.phase !== "betting" ||
+      game.endsAt == null ||
+      Date.now() >= game.endsAt
+    ) {
       return;
     }
     if (userPlacedStakeTotal <= 0) {
@@ -540,10 +569,11 @@ export function RouletteGameClient() {
     setErr(null);
     setDoubling(true);
     try {
+      const duplicateCost = userPlacedStakeTotal;
       await roulettePost<{ ok: boolean }>("/api/roulette/double-bets", token, {
         roundId: game.roundId,
       });
-      pushActivityToast(`Doubled · +₹${userPlacedStakeTotal.toLocaleString("en-IN")} stake`);
+      pushActivityToast(`Doubled · +₹${duplicateCost.toLocaleString("en-IN")} stake`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not double bets");
     } finally {
@@ -579,6 +609,7 @@ export function RouletteGameClient() {
       lastPlacedRef.current = bets;
       setCanRebet(true);
       const total = bets.reduce((s, b) => s + b.amount, 0);
+      setPendingExpectedMyStake(userStakeSnapRef.current + total);
       pushActivityToast(`Placed ₹${total.toLocaleString("en-IN")} · ${bets.length} line(s)`);
       setStaged(new Map());
       setUndoStack([]);
@@ -683,11 +714,11 @@ export function RouletteGameClient() {
                 >
                   {headerBalance != null ? `₹${headerBalance.toLocaleString("en-IN")}` : "—"}
                 </p>
-                {userPlacedStakeTotal > 0 ? (
+                {displayMyPlacedStake > 0 ? (
                   <p className="mt-0.5 truncate text-[9px] font-semibold tabular-nums text-emerald-300/95 sm:text-[10px] lg:text-xs">
                     Your bet
                     {game?.phase === "result" ? " (this round)" : ""} · ₹
-                    {userPlacedStakeTotal.toLocaleString("en-IN")}
+                    {displayMyPlacedStake.toLocaleString("en-IN")}
                   </p>
                 ) : null}
                 {game?.phase === "betting" && totalStaged > 0 && displayBalance != null ? (
@@ -760,7 +791,7 @@ export function RouletteGameClient() {
               disabled={
                 game?.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt || blocked
               }
-              liveBets={liveBets}
+              liveBets={myRoundBets}
               stagedKeys={stagedKeys}
               stagedBets={stagedBetRows}
             />
@@ -775,7 +806,7 @@ export function RouletteGameClient() {
             />
           </div>
 
-          <div className="order-3 flex flex-wrap gap-1 sm:gap-1.5 lg:gap-2">
+          <div className="order-3 relative z-30 flex flex-wrap gap-1 sm:gap-1.5 lg:gap-2">
             <button
               type="button"
               disabled={
@@ -819,17 +850,14 @@ export function RouletteGameClient() {
               type="button"
               disabled={
                 doubling ||
-                placing ||
                 userPlacedStakeTotal <= 0 ||
-                balance == null ||
-                balance < userPlacedStakeTotal ||
                 game?.phase !== "betting" ||
-                !game?.endsAt ||
+                game.endsAt == null ||
                 Date.now() >= game.endsAt
               }
               onClick={() => void doubleMyBets()}
-              className="rounded-md border border-emerald-700/50 px-2 py-1 text-[10px] font-medium text-emerald-200 hover:bg-emerald-950/35 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
-              title="Place the same stake again on every bet you already have this round"
+              className="min-h-9 min-w-[4.5rem] shrink-0 touch-manipulation rounded-md border border-emerald-700/50 px-2 py-1.5 text-[10px] font-medium text-emerald-200 hover:bg-emerald-950/35 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:min-h-10 lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
+              title="Duplicate every bet you already have this round (same positions and amounts)"
             >
               {doubling ? (
                 <>

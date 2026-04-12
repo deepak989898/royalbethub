@@ -94,6 +94,7 @@ export function RouletteGameClient() {
   const [canRebet, setCanRebet] = useState(false);
   const [activityToasts, setActivityToasts] = useState<{ id: string; text: string }[]>([]);
   const [placing, setPlacing] = useState(false);
+  const [doubling, setDoubling] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [adminMissing, setAdminMissing] = useState(false);
   const [spinRev, setSpinRev] = useState(0);
@@ -460,6 +461,17 @@ export function RouletteGameClient() {
     return s;
   }, [staged]);
 
+  /** Confirmed stakes for this user in the current round (Firestore), not chips on the felt. */
+  const userPlacedStakeTotal = useMemo(() => {
+    if (!user) return 0;
+    let s = 0;
+    for (const b of liveBets) {
+      if (b.userId !== user.uid) continue;
+      s += b.amount;
+    }
+    return s;
+  }, [user, liveBets]);
+
   /** Wallet header: during betting with staged lines, show what is left after those bets (not yet placed). */
   const headerBalance = useMemo(() => {
     if (displayBalance == null) return null;
@@ -512,6 +524,32 @@ export function RouletteGameClient() {
     },
     [user, blocked, game, betUnit, playChip]
   );
+
+  async function doubleMyBets() {
+    if (!user || !token || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
+      return;
+    }
+    if (userPlacedStakeTotal <= 0) {
+      setErr("Place a bet before doubling.");
+      return;
+    }
+    if (balance != null && balance < userPlacedStakeTotal) {
+      setErr(`Need ₹${userPlacedStakeTotal.toLocaleString("en-IN")} balance to double your bets.`);
+      return;
+    }
+    setErr(null);
+    setDoubling(true);
+    try {
+      await roulettePost<{ ok: boolean }>("/api/roulette/double-bets", token, {
+        roundId: game.roundId,
+      });
+      pushActivityToast(`Doubled · +₹${userPlacedStakeTotal.toLocaleString("en-IN")} stake`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not double bets");
+    } finally {
+      setDoubling(false);
+    }
+  }
 
   async function placeStaged() {
     if (!user || !token || !game || staged.size === 0) return;
@@ -645,6 +683,13 @@ export function RouletteGameClient() {
                 >
                   {headerBalance != null ? `₹${headerBalance.toLocaleString("en-IN")}` : "—"}
                 </p>
+                {userPlacedStakeTotal > 0 ? (
+                  <p className="mt-0.5 truncate text-[9px] font-semibold tabular-nums text-emerald-300/95 sm:text-[10px] lg:text-xs">
+                    Your bet
+                    {game?.phase === "result" ? " (this round)" : ""} · ₹
+                    {userPlacedStakeTotal.toLocaleString("en-IN")}
+                  </p>
+                ) : null}
                 {game?.phase === "betting" && totalStaged > 0 && displayBalance != null ? (
                   <p className="mt-0.5 truncate text-[9px] tabular-nums text-zinc-500 lg:text-[10px]">
                     Wallet ₹{displayBalance.toLocaleString("en-IN")}
@@ -686,7 +731,11 @@ export function RouletteGameClient() {
               key={`${game.roundId}-win`}
               initial={{ opacity: 0, y: 18, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              transition={{
+                opacity: { duration: 0.55, ease: "easeOut" },
+                y: { type: "spring", stiffness: 200, damping: 20, mass: 1.05 },
+                scale: { type: "spring", stiffness: 200, damping: 20, mass: 1.05 },
+              }}
               className="relative overflow-hidden rounded-lg border border-amber-400/50 bg-gradient-to-br from-amber-950 via-amber-900/85 to-yellow-950/55 px-3 py-2 text-center shadow-[0_0_20px_rgba(245,158,11,0.18)] sm:rounded-xl sm:px-4 sm:py-3 lg:rounded-2xl lg:px-6 lg:py-5 lg:shadow-[0_0_36px_rgba(245,158,11,0.22)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(250,204,21,0.28),transparent_55%)]" />
@@ -765,6 +814,31 @@ export function RouletteGameClient() {
               className="rounded-md border border-amber-700/50 px-2 py-1 text-[10px] font-medium text-amber-200 hover:bg-amber-950/40 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
             >
               Rebet
+            </button>
+            <button
+              type="button"
+              disabled={
+                doubling ||
+                placing ||
+                userPlacedStakeTotal <= 0 ||
+                balance == null ||
+                balance < userPlacedStakeTotal ||
+                game?.phase !== "betting" ||
+                !game?.endsAt ||
+                Date.now() >= game.endsAt
+              }
+              onClick={() => void doubleMyBets()}
+              className="rounded-md border border-emerald-700/50 px-2 py-1 text-[10px] font-medium text-emerald-200 hover:bg-emerald-950/35 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
+              title="Place the same stake again on every bet you already have this round"
+            >
+              {doubling ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" aria-hidden />
+                  <span className="sr-only">Doubling…</span>
+                </>
+              ) : (
+                "Double"
+              )}
             </button>
           </div>
 

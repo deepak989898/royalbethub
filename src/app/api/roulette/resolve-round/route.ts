@@ -123,7 +123,7 @@ export async function POST() {
       tx.update(stateRef, {
         phase: "result",
         winningNumber: winning,
-        resultShownUntil: admin.firestore.Timestamp.fromMillis(Date.now() + 7000),
+        resultShownUntil: admin.firestore.Timestamp.fromMillis(Date.now() + 9000),
         manualNextNumber: null,
         recentResults: recent,
         totalHouseProfit: prevProfit + (totalStakes - totalPaidOut),

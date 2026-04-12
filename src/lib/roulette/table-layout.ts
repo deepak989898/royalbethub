@@ -108,4 +108,4 @@ export function dozenIndex(n: number): 1 | 2 | 3 | null {
 export const SPIN_ANIMATION_MS = 7400;
 
 /** Big winning number above the wheel: visible for this long after the spin finishes. */
-export const WIN_NUMBER_OVERLAY_MS = 3000;
+export const WIN_NUMBER_OVERLAY_MS = 5000;

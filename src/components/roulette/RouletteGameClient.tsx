@@ -14,15 +14,11 @@ import { Loader2 } from "lucide-react";
 import { getDb, getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { SPIN_ANIMATION_MS } from "@/lib/roulette/table-layout";
 import type { BetType } from "@/lib/roulette/types";
-import {
-  clientBetKey,
-  isValidBetStake,
-  MAX_BET_AMOUNT,
-  MIN_BET_AMOUNT,
-} from "@/lib/roulette/types";
+import { isValidBetStake, MAX_BET_AMOUNT, MIN_BET_AMOUNT } from "@/lib/roulette/types";
 import { roulettePost } from "@/lib/roulette/client-api";
 import { payoutForBet } from "@/lib/roulette/payout";
 import { colorOf } from "@/lib/roulette/constants";
+import { mergePlacedLines, type PlacedLine } from "@/lib/roulette/merge-placed-bets";
 import { ROULETTE_STATE_DOC } from "@/lib/roulette/paths";
 import { BetAmountControl } from "./BetAmountControl";
 import { BettingTable, type TableBetPayload } from "./BettingTable";
@@ -64,16 +60,6 @@ type LiveBet = {
   userId: string;
 };
 
-type StakeAction = {
-  key: string;
-  type: BetType;
-  selection?: number;
-  selectionStr?: string;
-  amount: number;
-};
-
-type PlacedBet = { type: BetType; selection?: number; selectionStr?: string; amount: number };
-
 /** Auto-hide transient errors (e.g. “Betting window ended”, “Insufficient balance”). */
 const ROULETTE_ERROR_DISMISS_MS = 6500;
 
@@ -85,12 +71,11 @@ export function RouletteGameClient() {
   const [game, setGame] = useState<GameState | null>(null);
   const [liveBets, setLiveBets] = useState<LiveBet[]>([]);
   const [betUnit, setBetUnit] = useState(50);
-  const [staged, setStaged] = useState<
-    Map<string, { type: BetType; selection?: number; selectionStr?: string; amount: number }>
-  >(() => new Map());
   const [spinComplete, setSpinComplete] = useState(false);
-  const [undoStack, setUndoStack] = useState<StakeAction[]>([]);
-  const lastPlacedRef = useRef<PlacedBet[]>([]);
+  /** Cumulative lines placed in the current round (for same-round Rebet). */
+  const lastPlacedRef = useRef<PlacedLine[]>([]);
+  /** Snapshot at last round change — previous round’s layout (for Rebet after a new round opens). */
+  const rebetPatternRef = useRef<PlacedLine[]>([]);
   /** Latest confirmed stake sum from Firestore (updated every render for place/double timing). */
   const userStakeSnapRef = useRef(0);
   const [canRebet, setCanRebet] = useState(false);
@@ -318,9 +303,12 @@ export function RouletteGameClient() {
   }, [game?.phase, game?.resultShownUntil, game?.roundId]);
 
   useEffect(() => {
-    setStaged(new Map());
-    setUndoStack([]);
     setPendingExpectedMyStake(null);
+    if (lastPlacedRef.current.length > 0) {
+      rebetPatternRef.current = lastPlacedRef.current.map((b) => ({ ...b }));
+    }
+    lastPlacedRef.current = [];
+    setCanRebet(rebetPatternRef.current.length > 0);
   }, [game?.roundId]);
 
   function pushActivityToast(text: string) {
@@ -331,38 +319,25 @@ export function RouletteGameClient() {
     }, 4500);
   }
 
-  function undoLastStake() {
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1]!;
-      const rest = prev.slice(0, -1);
-      setStaged((s) => {
-        const next = new Map(s);
-        const cur = next.get(last.key);
-        if (!cur) return next;
-        const na = cur.amount - last.amount;
-        if (na <= 0) next.delete(last.key);
-        else
-          next.set(last.key, {
-            type: last.type,
-            selection: last.selection,
-            selectionStr: last.selectionStr,
-            amount: na,
-          });
-        return next;
-      });
-      return rest;
-    });
+  function payloadToLine(p: TableBetPayload, amount: number): PlacedLine {
+    return {
+      type: p.type,
+      selection:
+        p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
+      selectionStr:
+        p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
+      amount,
+    };
   }
 
-  function clearStaged() {
-    setUndoStack([]);
-    setStaged(new Map());
-  }
-
-  function rebet() {
-    if (!game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) return;
-    const list = lastPlacedRef.current;
+  async function rebet() {
+    if (!user || !token || !game || game.phase !== "betting" || game.endsAt == null || Date.now() >= game.endsAt) {
+      return;
+    }
+    const list =
+      lastPlacedRef.current.length > 0
+        ? [...lastPlacedRef.current]
+        : [...rebetPatternRef.current];
     if (list.length === 0) {
       setErr("No previous bet to repeat.");
       return;
@@ -372,24 +347,39 @@ export function RouletteGameClient() {
       setErr(`Need ₹${total.toLocaleString("en-IN")} balance for this rebet.`);
       return;
     }
-    setErr(null);
-    const m = new Map<
-      string,
-      { type: BetType; selection?: number; selectionStr?: string; amount: number }
-    >();
-    for (const b of list) {
-      const k = clientBetKey(b.type, b.selection, b.selectionStr);
-      m.set(k, {
-        type: b.type,
-        selection:
-          b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
-        selectionStr:
-          b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
-        amount: b.amount,
-      });
+    const bets = list.map((b) => ({
+      type: b.type,
+      selection:
+        b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
+      selectionStr:
+        b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
+      amount: b.amount,
+    }));
+    for (const b of bets) {
+      if (!isValidBetStake(b.amount)) {
+        setErr(
+          `Each line must be ₹${MIN_BET_AMOUNT.toLocaleString("en-IN")}–₹${MAX_BET_AMOUNT.toLocaleString("en-IN")} in multiples of ₹10.`
+        );
+        return;
+      }
     }
-    setStaged(m);
-    setUndoStack([]);
+    setErr(null);
+    setPlacing(true);
+    try {
+      await roulettePost<{ ok: boolean }>("/api/roulette/place-bet", token, {
+        roundId: game.roundId,
+        bets,
+      });
+      lastPlacedRef.current = mergePlacedLines(lastPlacedRef.current, list);
+      setCanRebet(true);
+      setPendingExpectedMyStake(userStakeSnapRef.current + total);
+      pushActivityToast(`Rebet ₹${total.toLocaleString("en-IN")} · ${bets.length} line(s)`);
+      playChip();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not rebet");
+    } finally {
+      setPlacing(false);
+    }
   }
 
   const [tick, setTick] = useState(0);
@@ -404,10 +394,6 @@ export function RouletteGameClient() {
     void tick;
     return Math.max(0, Math.ceil((game.endsAt - Date.now()) / 1000));
   }, [game?.endsAt, game?.phase, tick]);
-
-  const stagedKeys = useMemo(() => new Set(staged.keys()), [staged]);
-
-  const stagedBetRows = useMemo(() => [...staged.values()], [staged]);
 
   const displayedRecents = useMemo(() => {
     if (!game || game.recentResults.length === 0) return [];
@@ -458,14 +444,6 @@ export function RouletteGameClient() {
     playWin();
   }, [spinComplete, game?.roundId, game?.phase, userRoundWinTotal, playWin]);
 
-  const totalStaged = useMemo(() => {
-    let s = 0;
-    staged.forEach((v) => {
-      s += v.amount;
-    });
-    return s;
-  }, [staged]);
-
   /** This user’s bets in the current round (table + totals are per-viewer; payouts still use full `liveBets`). */
   const myRoundBets = useMemo(() => {
     if (!user) return [];
@@ -494,57 +472,67 @@ export function RouletteGameClient() {
     return Math.max(userPlacedStakeTotal, pendingExpectedMyStake);
   }, [userPlacedStakeTotal, pendingExpectedMyStake]);
 
-  /** Wallet header: during betting with staged lines, show what is left after those bets (not yet placed). */
-  const headerBalance = useMemo(() => {
-    if (displayBalance == null) return null;
-    if (game?.phase === "betting" && totalStaged > 0) {
-      return Math.max(0, displayBalance - totalStaged);
-    }
-    return displayBalance;
-  }, [displayBalance, game?.phase, totalStaged]);
+  const headerBalance = useMemo(() => displayBalance, [displayBalance]);
 
   const stakeMaxHint = useMemo(() => {
     if (balance == null) return null;
-    if (game?.phase !== "betting") return balance;
-    return Math.max(0, balance - totalStaged);
-  }, [balance, game?.phase, totalStaged]);
+    return balance;
+  }, [balance]);
+
+  const placeLockRef = useRef(false);
 
   const onBet = useCallback(
     (p: TableBetPayload) => {
-      if (!user || blocked || !game || game.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt) {
+      if (
+        !user ||
+        !token ||
+        blocked ||
+        !game ||
+        game.phase !== "betting" ||
+        game.endsAt == null ||
+        Date.now() >= game.endsAt ||
+        placeLockRef.current
+      ) {
         return;
       }
       if (!isValidBetStake(betUnit)) return;
-      const k = clientBetKey(p.type, p.selection, p.selectionStr);
-      const add = betUnit;
-      setUndoStack((prev) => [
-        ...prev,
+      const line = payloadToLine(p, betUnit);
+      const bets = [
         {
-          key: k,
-          type: p.type,
+          type: line.type,
           selection:
-            p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
+            line.type === "straight" || line.type === "column" || line.type === "dozen"
+              ? line.selection
+              : undefined,
           selectionStr:
-            p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
-          amount: add,
+            line.type === "split" || line.type === "corner" || line.type === "street"
+              ? line.selectionStr
+              : undefined,
+          amount: line.amount,
         },
-      ]);
-      setStaged((prev) => {
-        const next = new Map(prev);
-        const cur = next.get(k);
-        next.set(k, {
-          type: p.type,
-          selection:
-            p.type === "straight" || p.type === "column" || p.type === "dozen" ? p.selection : undefined,
-          selectionStr:
-            p.type === "split" || p.type === "corner" || p.type === "street" ? p.selectionStr : undefined,
-          amount: (cur?.amount || 0) + add,
-        });
-        return next;
-      });
-      playChip();
+      ];
+      void (async () => {
+        placeLockRef.current = true;
+        setPlacing(true);
+        setErr(null);
+        try {
+          await roulettePost<{ ok: boolean }>("/api/roulette/place-bet", token, {
+            roundId: game.roundId,
+            bets,
+          });
+          lastPlacedRef.current = mergePlacedLines(lastPlacedRef.current, [line]);
+          setCanRebet(true);
+          setPendingExpectedMyStake(userStakeSnapRef.current + betUnit);
+          playChip();
+        } catch (e) {
+          setErr(e instanceof Error ? e.message : "Could not place bet");
+        } finally {
+          setPlacing(false);
+          placeLockRef.current = false;
+        }
+      })();
     },
-    [user, blocked, game, betUnit, playChip]
+    [user, token, blocked, game, betUnit, playChip]
   );
 
   async function doubleMyBets() {
@@ -578,45 +566,6 @@ export function RouletteGameClient() {
       setErr(e instanceof Error ? e.message : "Could not double bets");
     } finally {
       setDoubling(false);
-    }
-  }
-
-  async function placeStaged() {
-    if (!user || !token || !game || staged.size === 0) return;
-    setErr(null);
-    const bets = [...staged.values()].map((b) => ({
-      type: b.type,
-      selection:
-        b.type === "straight" || b.type === "column" || b.type === "dozen" ? b.selection : undefined,
-      selectionStr:
-        b.type === "split" || b.type === "corner" || b.type === "street" ? b.selectionStr : undefined,
-      amount: b.amount,
-    }));
-    for (const b of bets) {
-      if (!isValidBetStake(b.amount)) {
-        setErr(
-          `Each line must be ₹${MIN_BET_AMOUNT.toLocaleString("en-IN")}–₹${MAX_BET_AMOUNT.toLocaleString("en-IN")} in multiples of ₹10.`
-        );
-        return;
-      }
-    }
-    setPlacing(true);
-    try {
-      await roulettePost<{ ok: boolean }>("/api/roulette/place-bet", token, {
-        roundId: game.roundId,
-        bets,
-      });
-      lastPlacedRef.current = bets;
-      setCanRebet(true);
-      const total = bets.reduce((s, b) => s + b.amount, 0);
-      setPendingExpectedMyStake(userStakeSnapRef.current + total);
-      pushActivityToast(`Placed ₹${total.toLocaleString("en-IN")} · ${bets.length} line(s)`);
-      setStaged(new Map());
-      setUndoStack([]);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Could not place bets");
-    } finally {
-      setPlacing(false);
     }
   }
 
@@ -699,15 +648,10 @@ export function RouletteGameClient() {
           <div className="flex flex-col gap-0">
             <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-900/30 bg-black/50 px-2 py-1 sm:rounded-xl sm:py-1.5 sm:px-3 lg:gap-4 lg:px-4 lg:py-3">
               <div className="min-w-0">
-                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">
-                  {game?.phase === "betting" && totalStaged > 0 ? "Remaining" : "Balance"}
-                </p>
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500 lg:text-xs">Balance</p>
                 <p
                   className={`truncate text-sm font-bold tabular-nums sm:text-base lg:text-2xl ${
-                    game?.phase === "betting" &&
-                    totalStaged > 0 &&
-                    headerBalance != null &&
-                    headerBalance === 0
+                    game?.phase === "betting" && headerBalance != null && headerBalance === 0
                       ? "text-red-400"
                       : "text-amber-400"
                   }`}
@@ -719,15 +663,6 @@ export function RouletteGameClient() {
                     Your bet
                     {game?.phase === "result" ? " (this round)" : ""} · ₹
                     {displayMyPlacedStake.toLocaleString("en-IN")}
-                  </p>
-                ) : null}
-                {game?.phase === "betting" && totalStaged > 0 && displayBalance != null ? (
-                  <p className="mt-0.5 truncate text-[9px] tabular-nums text-zinc-500 lg:text-[10px]">
-                    Wallet ₹{displayBalance.toLocaleString("en-IN")}
-                    <span className="text-zinc-600">
-                      {" "}
-                      · staged ₹{totalStaged.toLocaleString("en-IN")}
-                    </span>
                   </p>
                 ) : null}
               </div>
@@ -789,11 +724,13 @@ export function RouletteGameClient() {
             <BettingTable
               onBet={onBet}
               disabled={
-                game?.phase !== "betting" || !game.endsAt || Date.now() >= game.endsAt || blocked
+                placing ||
+                game?.phase !== "betting" ||
+                game.endsAt == null ||
+                Date.now() >= game.endsAt ||
+                blocked
               }
               liveBets={myRoundBets}
-              stagedKeys={stagedKeys}
-              stagedBets={stagedBetRows}
             />
           </div>
 
@@ -802,7 +739,11 @@ export function RouletteGameClient() {
               value={betUnit}
               onChange={setBetUnit}
               maxHint={stakeMaxHint}
-              disabled={game?.phase !== "betting" || (game.endsAt != null && Date.now() >= game.endsAt)}
+              disabled={
+                placing ||
+                game?.phase !== "betting" ||
+                (game.endsAt != null && Date.now() >= game.endsAt)
+              }
             />
           </div>
 
@@ -810,38 +751,13 @@ export function RouletteGameClient() {
             <button
               type="button"
               disabled={
-                undoStack.length === 0 ||
-                game?.phase !== "betting" ||
-                !game?.endsAt ||
-                Date.now() >= game.endsAt
-              }
-              onClick={() => undoLastStake()}
-              className="rounded-md border border-zinc-600 px-2 py-1 text-[10px] font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              disabled={
-                staged.size === 0 ||
-                game?.phase !== "betting" ||
-                !game?.endsAt ||
-                Date.now() >= game.endsAt
-              }
-              onClick={() => clearStaged()}
-              className="rounded-md border border-zinc-600 px-2 py-1 text-[10px] font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              disabled={
+                placing ||
                 !canRebet ||
                 game?.phase !== "betting" ||
-                !game?.endsAt ||
+                game.endsAt == null ||
                 Date.now() >= game.endsAt
               }
-              onClick={() => rebet()}
+              onClick={() => void rebet()}
               className="rounded-md border border-amber-700/50 px-2 py-1 text-[10px] font-medium text-amber-200 hover:bg-amber-950/40 disabled:opacity-40 sm:rounded-lg sm:px-2.5 sm:py-1.5 sm:text-xs lg:rounded-xl lg:px-4 lg:py-2 lg:text-sm"
             >
               Rebet
@@ -850,6 +766,7 @@ export function RouletteGameClient() {
               type="button"
               disabled={
                 doubling ||
+                placing ||
                 userPlacedStakeTotal <= 0 ||
                 game?.phase !== "betting" ||
                 game.endsAt == null ||
@@ -870,25 +787,8 @@ export function RouletteGameClient() {
             </button>
           </div>
 
-          <button
-            type="button"
-            disabled={
-              placing ||
-              staged.size === 0 ||
-              game?.phase !== "betting" ||
-              !game?.endsAt ||
-              Date.now() >= game.endsAt
-            }
-            onClick={() => void placeStaged()}
-            className="order-4 flex w-full items-center justify-center gap-1.5 rounded-md bg-gradient-to-r from-amber-600 to-amber-500 py-2 text-xs font-bold text-black shadow-md shadow-amber-900/25 disabled:opacity-40 sm:rounded-lg sm:py-2.5 sm:text-sm lg:rounded-xl lg:py-3 lg:text-base lg:shadow-lg"
-          >
-            {placing ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4 lg:h-5 lg:w-5" /> : null}
-            <span className="lg:hidden">Place</span>
-            <span className="hidden lg:inline">Place bets</span>
-          </button>
-
           {game && displayedRecents.length > 0 ? (
-            <div className="order-5 lg:hidden">{recentsSection}</div>
+            <div className="order-4 lg:order-5 lg:hidden">{recentsSection}</div>
           ) : null}
         </div>
       </div>

@@ -193,7 +193,58 @@ export function RouletteWheel({
           </motion.div>
         </div>
 
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-500/60 bg-gradient-to-br from-zinc-900 to-black shadow-inner" />
+        {/* Fixed hub: colorful octagonal conic core + gold spindle (replaces blank/black center). */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 flex h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+          <div
+            className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-amber-600/70 shadow-[inset_0_2px_8px_rgba(0,0,0,0.35),0_2px_12px_rgba(245,158,11,0.25)]"
+            style={{
+              background: `conic-gradient(
+              from 22.5deg,
+              #15803d 0deg 45deg,
+              #d4a574 45deg 90deg,
+              #b91c1c 90deg 135deg,
+              #ca8a04 135deg 180deg,
+              #18181b 180deg 225deg,
+              #22c55e 225deg 270deg,
+              #92400e 270deg 315deg,
+              #eab308 315deg 360deg
+            )`,
+            }}
+            aria-hidden
+          >
+            <div
+              className="absolute inset-[10%] rounded-full border border-amber-500/40 opacity-90"
+              style={{
+                background: `repeating-conic-gradient(
+                from 0deg,
+                rgba(21, 128, 61, 0.55) 0deg 11.25deg,
+                rgba(212, 165, 116, 0.45) 11.25deg 22.5deg
+              )`,
+              }}
+            />
+            <svg
+              className="absolute inset-[6%] z-[1] h-[88%] w-[88%] overflow-visible"
+              viewBox="0 0 100 100"
+              fill="none"
+              aria-hidden
+            >
+              {[0, 90, 180, 270].map((deg) => (
+                <line
+                  key={deg}
+                  x1="50"
+                  y1="50"
+                  x2="50"
+                  y2="14"
+                  stroke="rgba(251, 191, 36, 0.55)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  transform={`rotate(${deg} 50 50)`}
+                />
+              ))}
+            </svg>
+            <div className="relative z-10 h-[38%] w-[38%] rounded-full border border-amber-300/70 bg-gradient-to-br from-amber-100 via-amber-400 to-amber-800 shadow-[0_1px_3px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.65)]" />
+          </div>
+        </div>
       </div>
     </div>
   );

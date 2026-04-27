@@ -32,8 +32,8 @@ export function RouletteWheel({
   const [winOverlayDismissed, setWinOverlayDismissed] = useState(false);
   const r = 160;
   const outerR = r - 8;
-  const midR = r * 0.72;
-  const innerR = r * 0.44;
+  const midR = r * 0.6;
+  const innerR = r * 0.34;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
 
   useLayoutEffect(() => {
@@ -77,9 +77,9 @@ export function RouletteWheel({
     const ease = [0.15, 0.75, 0.1, 1] as const;
     const duration = SPIN_ANIMATION_MS / 1000;
     const wheelCurrent = wheelRotation.get();
-    const wheelTarget = wheelSpinTargetDegrees(6.5, wheelCurrent);
+    const wheelTarget = wheelSpinTargetDegrees(7, wheelCurrent);
     const ballCurrent = ballAngle.get();
-    const ballTarget = ballArmTargetWorldDegrees(winningNumber, 6, ballCurrent, wheelTarget);
+    const ballTarget = ballArmTargetWorldDegrees(winningNumber, 8, ballCurrent, wheelTarget);
     void animate(wheelRotation, wheelTarget, { duration, ease });
     void animate(ballAngle, ballTarget, { duration, ease });
   }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
@@ -183,14 +183,8 @@ export function RouletteWheel({
                   />
                   <path
                     d={`M ${bx0} ${by0} A ${midR} ${midR} 0 0 1 ${bx1} ${by1} L ${bix1} ${biy1} A ${innerR} ${innerR} 0 0 0 ${bix0} ${biy0} Z`}
-                    fill={
-                      col === "green"
-                        ? "rgba(21,128,61,0.38)"
-                        : col === "red"
-                          ? "rgba(185,28,28,0.36)"
-                          : "rgba(39,39,42,0.6)"
-                    }
-                    stroke="rgba(0,0,0,0.42)"
+                    fill="rgba(120, 76, 44, 0.85)"
+                    stroke="rgba(70,34,17,0.7)"
                     strokeWidth={0.75}
                   />
                   <text
@@ -214,7 +208,7 @@ export function RouletteWheel({
         <div className="pointer-events-none absolute inset-[4px] z-[15] flex items-center justify-center">
           <motion.div className="absolute inset-0" style={{ rotate: ballAngle }}>
             <div
-              className="absolute left-1/2 top-[21%] z-10 h-[clamp(13px,5vw,16px)] w-[clamp(13px,5vw,16px)] -translate-x-1/2 sm:h-[clamp(10px,3.2vw,14px)] sm:w-[clamp(10px,3.2vw,14px)]"
+              className="absolute left-1/2 top-[31%] z-10 h-[clamp(13px,5vw,16px)] w-[clamp(13px,5vw,16px)] -translate-x-1/2 sm:h-[clamp(10px,3.2vw,14px)] sm:w-[clamp(10px,3.2vw,14px)]"
             >
               <div
                 className="h-full w-full rounded-full border border-white/90 bg-gradient-to-br from-white via-zinc-100 to-zinc-400 shadow-[0_0_14px_rgba(255,255,255,0.85),inset_0_1px_2px_rgba(255,255,255,0.9)]"

@@ -34,8 +34,7 @@ export function ballArmTargetDegrees(n: number, fullSpins: number, currentDeg: n
 
 /** Wheel spins counter-clockwise (negative CSS degrees) while ball goes clockwise. */
 export function wheelSpinTargetDegrees(fullSpins: number, currentDeg: number): number {
-  const jitter = 15 + Math.random() * 25;
-  return currentDeg - fullSpins * 360 - jitter;
+  return currentDeg - fullSpins * 360;
 }
 
 /**

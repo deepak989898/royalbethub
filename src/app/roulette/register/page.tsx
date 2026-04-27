@@ -2,11 +2,30 @@
 
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import type { FirebaseError } from "firebase/app";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { roulettePost } from "@/lib/roulette/client-api";
+
+function friendlyRegisterError(error: unknown): string {
+  const code = (error as FirebaseError | undefined)?.code;
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "This email is already in use. Try Login.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/operation-not-allowed":
+      return "Email/Password sign-up is disabled in Firebase Console -> Authentication -> Sign-in method.";
+    case "auth/weak-password":
+      return "Password is too weak. Use at least 6 characters.";
+    case "auth/network-request-failed":
+      return "Network issue. Check internet and try again.";
+    default:
+      return "Could not register right now. Please try again.";
+  }
+}
 
 export default function RouletteRegisterPage() {
   const router = useRouter();
@@ -30,15 +49,19 @@ export default function RouletteRegisterPage() {
     try {
       const cred = await createUserWithEmailAndPassword(
         getFirebaseAuth(),
-        email.trim(),
+        email.trim().toLowerCase(),
         password
       );
-      const token = await cred.user.getIdToken();
-      await roulettePost("/api/roulette/bootstrap-user", token, {});
+      try {
+        const token = await cred.user.getIdToken();
+        await roulettePost("/api/roulette/bootstrap-user", token, {});
+      } catch {
+        // Account creation should not be treated as failed if wallet bootstrap is unavailable.
+      }
       router.replace("/roulette");
       router.refresh();
-    } catch {
-      setError("Could not register (email in use or invalid).");
+    } catch (e) {
+      setError(friendlyRegisterError(e));
     } finally {
       setLoading(false);
     }

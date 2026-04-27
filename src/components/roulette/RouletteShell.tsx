@@ -25,9 +25,7 @@ export function RouletteShell({ children }: { children: React.ReactNode }) {
         }}
       />
       <RouletteNav userEmail={email} />
-      <div className="relative mx-auto max-w-6xl px-[10px] pb-2 pt-[10px] sm:pb-6 sm:pt-[10px] lg:px-[10px] lg:pb-10 lg:pt-[10px]">
-        {children}
-      </div>
+      <div className="relative mx-auto max-w-6xl px-2 py-2 sm:px-6 sm:py-8 lg:py-10">{children}</div>
     </div>
   );
 }

@@ -31,6 +31,9 @@ export function RouletteWheel({
   /** After ball stops, show win number until timer hides it (must not lag one frame behind `highlightWinner`). */
   const [winOverlayDismissed, setWinOverlayDismissed] = useState(false);
   const r = 160;
+  const outerR = r - 8;
+  const midR = r * 0.72;
+  const innerR = r * 0.44;
   const step = (2 * Math.PI) / EUROPEAN_WHEEL_ORDER.length;
 
   useLayoutEffect(() => {
@@ -82,7 +85,7 @@ export function RouletteWheel({
   }, [spinTrigger, winningNumber, ballAngle, wheelRotation]);
 
   return (
-    <div className="relative flex w-full max-w-[min(100%,300px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
+    <div className="relative mx-auto flex w-full max-w-[min(100%,300px)] flex-col items-center sm:max-w-[min(100%,280px)] md:max-w-[min(100%,320px)] lg:max-w-[min(100%,380px)]">
       <div className="mb-0.5 flex min-h-[2.75rem] w-full flex-col items-center justify-center md:min-h-[3rem]">
         <AnimatePresence>
           {showWinOverlay && winningNumber != null ? (
@@ -125,6 +128,19 @@ export function RouletteWheel({
           style={{ rotate: wheelRotation }}
         >
           <svg viewBox={`-${r} -${r} ${r * 2} ${r * 2}`} className="h-full w-full">
+            <defs>
+              <filter id="winGlow" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <circle r={outerR + 1} fill="none" stroke="rgba(120,53,15,0.8)" strokeWidth="2.5" />
+            <circle r={innerR - 2} fill="none" stroke="rgba(120,53,15,0.7)" strokeWidth="2" />
+
             {EUROPEAN_WHEEL_ORDER.map((num, i) => {
               const a0 = i * step - Math.PI / 2;
               const a1 = (i + 1) * step - Math.PI / 2;
@@ -135,23 +151,47 @@ export function RouletteWheel({
                   : col === "red"
                     ? "#b91c1c"
                     : "#18181b";
-              const x0 = Math.cos(a0) * (r - 8);
-              const y0 = Math.sin(a0) * (r - 8);
-              const x1 = Math.cos(a1) * (r - 8);
-              const y1 = Math.sin(a1) * (r - 8);
+              const x0 = Math.cos(a0) * outerR;
+              const y0 = Math.sin(a0) * outerR;
+              const x1 = Math.cos(a1) * outerR;
+              const y1 = Math.sin(a1) * outerR;
+              const ix0 = Math.cos(a0) * midR;
+              const iy0 = Math.sin(a0) * midR;
+              const ix1 = Math.cos(a1) * midR;
+              const iy1 = Math.sin(a1) * midR;
+              const bx0 = Math.cos(a0) * midR;
+              const by0 = Math.sin(a0) * midR;
+              const bx1 = Math.cos(a1) * midR;
+              const by1 = Math.sin(a1) * midR;
+              const bix0 = Math.cos(a0) * innerR;
+              const biy0 = Math.sin(a0) * innerR;
+              const bix1 = Math.cos(a1) * innerR;
+              const biy1 = Math.sin(a1) * innerR;
               const mid = (a0 + a1) / 2;
-              const tx = Math.cos(mid) * (r * 0.72);
-              const ty = Math.sin(mid) * (r * 0.72);
+              const tx = Math.cos(mid) * ((outerR + midR) / 2);
+              const ty = Math.sin(mid) * ((outerR + midR) / 2);
               const isWin =
                 highlightWinner && phase === "result" && winningNumber != null && num === winningNumber;
               return (
                 <g key={`${num}-${i}`}>
                   <path
-                    d={`M 0 0 L ${x0} ${y0} A ${r - 8} ${r - 8} 0 0 1 ${x1} ${y1} Z`}
+                    d={`M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1} L ${ix1} ${iy1} A ${midR} ${midR} 0 0 0 ${ix0} ${iy0} Z`}
                     fill={fill}
                     stroke={isWin ? "rgba(250, 204, 21, 0.95)" : "rgba(0,0,0,0.5)"}
                     strokeWidth={isWin ? 3 : 1}
                     filter={isWin ? "url(#winGlow)" : undefined}
+                  />
+                  <path
+                    d={`M ${bx0} ${by0} A ${midR} ${midR} 0 0 1 ${bx1} ${by1} L ${bix1} ${biy1} A ${innerR} ${innerR} 0 0 0 ${bix0} ${biy0} Z`}
+                    fill={
+                      col === "green"
+                        ? "rgba(21,128,61,0.38)"
+                        : col === "red"
+                          ? "rgba(185,28,28,0.36)"
+                          : "rgba(39,39,42,0.6)"
+                    }
+                    stroke="rgba(0,0,0,0.42)"
+                    strokeWidth={0.75}
                   />
                   <text
                     x={tx}
@@ -168,22 +208,13 @@ export function RouletteWheel({
                 </g>
               );
             })}
-            <defs>
-              <filter id="winGlow" x="-40%" y="-40%" width="180%" height="180%">
-                <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
           </svg>
         </motion.div>
 
         <div className="pointer-events-none absolute inset-[4px] z-[15] flex items-center justify-center">
           <motion.div className="absolute inset-0" style={{ rotate: ballAngle }}>
             <div
-              className="absolute left-1/2 top-[3.5%] z-10 h-[clamp(13px,5vw,16px)] w-[clamp(13px,5vw,16px)] -translate-x-1/2 sm:h-[clamp(10px,3.2vw,14px)] sm:w-[clamp(10px,3.2vw,14px)]"
+              className="absolute left-1/2 top-[21%] z-10 h-[clamp(13px,5vw,16px)] w-[clamp(13px,5vw,16px)] -translate-x-1/2 sm:h-[clamp(10px,3.2vw,14px)] sm:w-[clamp(10px,3.2vw,14px)]"
             >
               <div
                 className="h-full w-full rounded-full border border-white/90 bg-gradient-to-br from-white via-zinc-100 to-zinc-400 shadow-[0_0_14px_rgba(255,255,255,0.85),inset_0_1px_2px_rgba(255,255,255,0.9)]"
